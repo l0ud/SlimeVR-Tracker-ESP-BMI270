@@ -62,6 +62,8 @@
     // 16 bit 333 lsb/K, ~0.00508 degrees per bit
 #elif IMU == IMU_BMI160
     // 16 bit 128 lsb/K, ~0.00195 degrees per bit
+#elif IMU == IMU_BMI270
+    // 16 bit 128 lsb/K, ~0.00195 degrees per bit
 #endif
 
 

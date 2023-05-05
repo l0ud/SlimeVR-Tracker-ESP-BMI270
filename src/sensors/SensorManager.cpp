@@ -28,6 +28,7 @@
 #include "mpu9250sensor.h"
 #include "mpu6050sensor.h"
 #include "bmi160sensor.h"
+#include "bmi270sensor.h"
 #include "icm20948sensor.h"
 #include "ErroneousSensor.h"
 #include "sensoraddresses.h"
@@ -67,6 +68,8 @@ namespace SlimeVR
                     m_Sensor1 = new MPU9250Sensor(sensorID, firstIMUAddress, IMU_ROTATION);
 #elif IMU == IMU_BMI160
                     m_Sensor1 = new BMI160Sensor(sensorID, firstIMUAddress, IMU_ROTATION);
+#elif IMU == IMU_BMI270
+                    m_Sensor1 = new BMI270Sensor(sensorID, firstIMUAddress, IMU_ROTATION);
 #elif IMU == IMU_MPU6500 || IMU == IMU_MPU6050
                     m_Sensor1 = new MPU6050Sensor(sensorID, IMU, firstIMUAddress, IMU_ROTATION);
 #elif IMU == IMU_ICM20948
@@ -105,6 +108,8 @@ namespace SlimeVR
                     m_Sensor2 = new MPU9250Sensor(sensorID, secondIMUAddress, SECOND_IMU_ROTATION);
 #elif SECOND_IMU == IMU_BMI160
                     m_Sensor2 = new BMI160Sensor(sensorID, secondIMUAddress, SECOND_IMU_ROTATION);
+#elif SECOND_IMU == IMU_BMI270
+                    m_Sensor2 = new BMI270Sensor(sensorID, secondIMUAddress, SECOND_IMU_ROTATION);
 #elif SECOND_IMU == IMU_MPU6500 || SECOND_IMU == IMU_MPU6050
                     m_Sensor2 = new MPU6050Sensor(sensorID, SECOND_IMU, secondIMUAddress, SECOND_IMU_ROTATION);
 #elif SECOND_IMU == IMU_ICM20948
