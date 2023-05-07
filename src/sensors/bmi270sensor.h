@@ -49,11 +49,11 @@
         #define BMI270_GYRO_RATE BMI270_GYRO_RATE_400HZ
     #endif
 #endif
-#define BMI270_GYRO_RANGE BMI270_GYRO_RANGE_1000
+#define BMI270_GYRO_RANGE BMI270_GYRO_RANGE_2000
 #define BMI270_GYRO_FILTER_MODE BMI270_DLPF_MODE_NORM
 
 #define BMI270_ACCEL_RATE BMI270_ACCEL_RATE_100HZ
-#define BMI270_ACCEL_RANGE BMI270_ACCEL_RANGE_4G
+#define BMI270_ACCEL_RANGE BMI270_ACCEL_RANGE_16G
 #define BMI270_ACCEL_FILTER_MODE BMI270_DLPF_MODE_NORM
 
 // note: if changing ODR or filter modes - adjust rest detection params and buffer size
@@ -232,6 +232,7 @@ class BMI270Sensor : public Sensor {
         uint32_t samplesSinceClockSync = 0;
         uint32_t timestamp0 = 0;
         uint32_t timestamp1 = 0;
+        uint8_t zx_cross_factor = 0;
 
         // scheduling
         uint32_t lastPollTime = micros();

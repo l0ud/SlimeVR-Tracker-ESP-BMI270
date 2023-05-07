@@ -26,7 +26,7 @@
 #include "GlobalVars.h"
 #include <hmc5883l.h>
 #include <qmc5883l.h>
-#include <map>
+#include <algorithm>
 
 void BMI270Sensor::initHMC(BMI270MagRate magRate) {
     /* Configure MAG interface and setup mode */
@@ -128,6 +128,8 @@ void BMI270Sensor::motionSetup() {
         return;
     }
     m_Logger.info("Connected to BMI270 (reported device ID 0x%02x) at address 0x%02x", imu.getDeviceID(), addr);
+
+    zx_cross_factor = imu.getZXFactor();
 
     // Initialize the configuration
     {
@@ -549,6 +551,9 @@ void BMI270Sensor::readFIFO() {
             #endif
             if (anew) onAccelRawSample(BMI270_ODR_ACC_MICROS, ax, ay, az);
             if (gnew) {
+            #if BMI270_APPLY_ZX_CROSS_AXIS_FACTOR
+                    gx = std::clamp((int32_t)(gx - (int16_t)(((int32_t) zx_cross_factor * (int32_t)gz) / 512)), INT16_MIN, INT16_MAX);                    
+            #endif
                 constexpr uint32_t alignmentBitmask = ~(0xFFFFFFFF << (16 - BMI270_GYRO_RATE));
                 uint32_t alignmentOffset =
                     (sensorTime1 & alignmentBitmask) * BMI270_TIMESTAMP_RESOLUTION_MICROS * sensorTimeRatioEma;

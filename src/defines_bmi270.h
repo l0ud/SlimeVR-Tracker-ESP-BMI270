@@ -50,6 +50,9 @@
 // Use temperature calibration.
 #define BMI270_USE_TEMPCAL true
 
+// post-process X axis for better gyroscope CAS performance 
+#define BMI270_APPLY_ZX_CROSS_AXIS_FACTOR true
+
 // How long to run gyro calibration for.
 // Disables this calibration step if value is 0.
 // Default: 5

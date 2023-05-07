@@ -50,6 +50,7 @@ THE SOFTWARE.
 
 #define BMI270_RA_PWR_CONF          0x7C
 #define BMI270_RA_INIT_CTRL         0x59
+#define BMI_RA_INIT_ADDR_0          0x5B
 #define BMI270_RA_INIT_DATA         0x5E
 
 #define BMI270_RA_SENSORTIME        0x18
@@ -159,6 +160,9 @@ THE SOFTWARE.
 
 #define BMI270_RA_FIFO_DATA         0x26
 
+#define BMI270_RA_GYR_CAS           0x3C
+
+#define BMI270_BURST_PAYLOAD_LENGTH (I2C_BUFFER_LENGTH - 2)
 
 /**
  * Accelerometer Output Data Rate options
@@ -801,6 +805,7 @@ class BMI270 {
         bool setMagRegister(uint8_t addr, uint8_t value);
 
         bool getErrReg(uint8_t* out);
+        uint8_t getZXFactor();
     private:
         uint8_t buffer[14];
         uint8_t devAddr;
