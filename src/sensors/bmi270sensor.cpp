@@ -130,6 +130,9 @@ void BMI270Sensor::motionSetup() {
     m_Logger.info("Connected to BMI270 (reported device ID 0x%02x) at address 0x%02x", imu.getDeviceID(), addr);
 
     zx_cross_factor = imu.getZXFactor();
+    imu.setAutoGyroRetrimming(BMI270_USE_AUTO_GYR_TRIMMING);
+    imu.setGyroOffsetEnabled(BMI270_USE_AUTO_GYR_TRIMMING);
+    imu.powerUp();
 
     // Initialize the configuration
     {

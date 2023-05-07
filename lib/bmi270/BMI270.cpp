@@ -96,17 +96,6 @@ bool BMI270::initialize(uint8_t addr,
     setGyroDLPFMode(gyroFilterMode);
     setAccelDLPFMode(accelFilterMode);
 
-    // enable power to accelerometer, gyroscope and temperature sensor
-    printf("Value to pwr ctrl 0x%x\n", (1 << BMI270_PWR_GYR_BIT) | (1 << BMI270_PWR_ACC_BIT) | (1 << BMI270_PWR_TEMP_BIT));
-    setRegister(BMI270_RA_PWR_CTRL, (1 << BMI270_PWR_GYR_BIT) | (1 << BMI270_PWR_ACC_BIT) | (1 << BMI270_PWR_TEMP_BIT));
-    delay(BMI270_POWERUP_DELAY_MS);
-
-    I2CdevMod::readByte(devAddr, BMI270_RA_PWR_CTRL, buffer);
-    printf("BMI270: PWR_CTRL: 0x%x\n", buffer[0]);
-    printf("BMI270: Status after pwr ctrl: 0x%x\n", getInternalStatus());
-
-
-
     I2CdevMod::readByte(devAddr, BMI270_RA_GYRO_CONF, buffer);
     printf("BMI270: GYRO_CONF: 0x%x\n", buffer[0]);
     I2CdevMod::readByte(devAddr, BMI270_RA_GYRO_RANGE, buffer);
@@ -124,17 +113,20 @@ bool BMI270::initialize(uint8_t addr,
     I2CdevMod::readByte(devAddr, BMI270_RA_STATUS, buffer);
     printf("BMI270: STATUS: 0x%x\n", buffer[0]);
 
-    I2CdevMod::readByte(devAddr, 0x34, buffer);
-    printf("BMI270: GEN SET 1: 0x%x\n", buffer[0]);
-
     printf("BMI270: ZX FACTOR: 0x%x\n", getZXFactor());
 
-    /* Only PIN1 interrupts currently supported - map all interrupts to PIN1 */
-    // I2CdevMod::writeByte(devAddr, BMI270_RA_INT_MAP_0, 0xFF);
-    // I2CdevMod::writeByte(devAddr, BMI270_RA_INT_MAP_1, 0xF0);
-    // I2CdevMod::writeByte(devAddr, BMI270_RA_INT_MAP_2, 0x00);
-
     return true;
+}
+
+void BMI270::powerUp() {
+    // enable power to accelerometer, gyroscope and temperature sensor
+    printf("Value to pwr ctrl 0x%x\n", (1 << BMI270_PWR_GYR_BIT) | (1 << BMI270_PWR_ACC_BIT) | (1 << BMI270_PWR_TEMP_BIT));
+    setRegister(BMI270_RA_PWR_CTRL, (1 << BMI270_PWR_GYR_BIT) | (1 << BMI270_PWR_ACC_BIT) | (1 << BMI270_PWR_TEMP_BIT));
+    delay(BMI270_POWERUP_DELAY_MS);
+
+    I2CdevMod::readByte(devAddr, BMI270_RA_PWR_CTRL, buffer);
+    printf("BMI270: PWR_CTRL: 0x%x\n", buffer[0]);
+    printf("BMI270: Status after pwr ctrl: 0x%x\n", getInternalStatus());
 }
 
 bool BMI270::getErrReg(uint8_t* out) {
@@ -146,8 +138,35 @@ bool BMI270::getErrReg(uint8_t* out) {
 
 uint8_t BMI270::getZXFactor()
 {
+    selectFeaturePage(0);
     I2CdevMod::readByte(devAddr, BMI270_RA_GYR_CAS, buffer);
     return buffer[0];
+}
+
+void BMI270::setAutoGyroRetrimming(bool enable)
+{
+    selectFeaturePage(1);
+     ;
+    I2CdevMod::readBytes(devAddr, BMI270_RA_GEN_SET_1, 2, buffer);
+
+    uint16_t feature_reg = (((int16_t)buffer[1]) << 8) | buffer[0];
+    printf("BMI270: Features read: 0x%x\n", feature_reg);
+
+    if (enable) {
+        feature_reg |= ((uint16_t)1 << BMI270_GYR_SELF_OFFSET_BIT);
+    }
+    else {
+        feature_reg &= ~((uint16_t)1 << BMI270_GYR_SELF_OFFSET_BIT);
+    }
+        printf("BMI270: Features to write: 0x%x\n", feature_reg);
+
+    buffer[0] = (uint8_t)feature_reg;
+    buffer[1] = (uint8_t)(feature_reg >> 8);
+    I2CdevMod::writeBytes(devAddr, BMI270_RA_GEN_SET_1, 2, buffer);
+}
+
+void BMI270::selectFeaturePage(uint8_t page) {
+    setRegister(BMI270_RA_FEAT_PAGE, page);
 }
 
 void BMI270::setMagDeviceAddress(uint8_t addr) {

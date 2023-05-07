@@ -164,6 +164,10 @@ THE SOFTWARE.
 
 #define BMI270_BURST_PAYLOAD_LENGTH (I2C_BUFFER_LENGTH - 2)
 
+#define BMI270_RA_FEAT_PAGE         0x2F
+#define BMI270_RA_GEN_SET_1         0x34
+#define BMI270_GYR_SELF_OFFSET_BIT  9
+
 /**
  * Accelerometer Output Data Rate options
  * @see setAccelRate()
@@ -606,6 +610,8 @@ class BMI270 {
             BMI270DLPFMode accelFilterMode = BMI270_DLPF_MODE_OSR4
         );
 
+        void powerUp();
+
 
         uint8_t getInternalStatus();
         bool uploadFW();
@@ -806,6 +812,8 @@ class BMI270 {
 
         bool getErrReg(uint8_t* out);
         uint8_t getZXFactor();
+        void setAutoGyroRetrimming(bool enable);
+        void selectFeaturePage(uint8_t page);
     private:
         uint8_t buffer[14];
         uint8_t devAddr;
