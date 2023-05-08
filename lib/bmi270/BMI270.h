@@ -239,8 +239,6 @@ typedef enum {
     BMI270_DLPF_MODE_OSR4 = 0x0,
 } BMI270DLPFMode;
 
-
-
 // not checked stuff from BMI160 driver, probably mostly invalid
 
 #define BMI270_MAG_PMU_STATUS_BIT   0
@@ -302,102 +300,7 @@ typedef enum {
 #define BMI270_STATUS_FOC_RDY       3
 #define BMI270_STATUS_NVM_RDY       4
 
-
-#define BMI270_STEP_INT_BIT         0
-#define BMI270_ANYMOTION_INT_BIT    2
-#define BMI270_D_TAP_INT_BIT        4
-#define BMI270_S_TAP_INT_BIT        5
-#define BMI270_NOMOTION_INT_BIT     7
-#define BMI270_FFULL_INT_BIT        5
-#define BMI270_DRDY_INT_BIT         4
-#define BMI270_LOW_G_INT_BIT        3
-#define BMI270_HIGH_G_INT_BIT       2
-
-#define BMI270_TAP_SIGN_BIT         7
-#define BMI270_TAP_1ST_Z_BIT        6
-#define BMI270_TAP_1ST_Y_BIT        5
-#define BMI270_TAP_1ST_X_BIT        4
-
-#define BMI270_ANYMOTION_SIGN_BIT   3
-#define BMI270_ANYMOTION_1ST_Z_BIT  2
-#define BMI270_ANYMOTION_1ST_Y_BIT  1
-#define BMI270_ANYMOTION_1ST_X_BIT  0
-
-#define BMI270_HIGH_G_SIGN_BIT      3
-#define BMI270_HIGH_G_1ST_Z_BIT     2
-#define BMI270_HIGH_G_1ST_Y_BIT     1
-#define BMI270_HIGH_G_1ST_X_BIT     0
-
-#define BMI270_RA_INT_STATUS_0      0x1C
-#define BMI270_RA_INT_STATUS_1      0x1D
-#define BMI270_RA_INT_STATUS_2      0x1E
-#define BMI270_RA_INT_STATUS_3      0x1F
-
 #define BMI270_FIFO_DATA_INVALID    0x80
-
-
-#define BMI270_ANYMOTION_EN_BIT     0
-#define BMI270_ANYMOTION_EN_LEN     3
-#define BMI270_D_TAP_EN_BIT         4
-#define BMI270_S_TAP_EN_BIT         5
-#define BMI270_NOMOTION_EN_BIT      0
-#define BMI270_NOMOTION_EN_LEN      3
-#define BMI270_LOW_G_EN_BIT         3
-#define BMI270_LOW_G_EN_LEN         1
-#define BMI270_HIGH_G_EN_BIT        0
-#define BMI270_HIGH_G_EN_LEN        3
-
-#define BMI270_STEP_EN_BIT          3
-#define BMI270_DRDY_EN_BIT          4
-#define BMI270_FFULL_EN_BIT         5
-
-#define BMI270_RA_INT_EN_0          0x50
-#define BMI270_RA_INT_EN_1          0x51
-#define BMI270_RA_INT_EN_2          0x52
-
-#define BMI270_INT1_EDGE_CTRL       0
-#define BMI270_INT1_LVL             1
-#define BMI270_INT1_OD              2
-#define BMI270_INT1_OUTPUT_EN       3
-
-#define BMI270_RA_INT_OUT_CTRL      0x53
-
-#define BMI270_LATCH_MODE_BIT       0
-#define BMI270_LATCH_MODE_LEN       4
-
-#define BMI270_RA_INT_LATCH         0x54
-#define BMI270_RA_INT_MAP_0         0x55
-#define BMI270_RA_INT_MAP_1         0x56
-#define BMI270_RA_INT_MAP_2         0x57
-
-#define BMI270_ANYMOTION_DUR_BIT    0
-#define BMI270_ANYMOTION_DUR_LEN    2
-#define BMI270_NOMOTION_DUR_BIT     2
-#define BMI270_NOMOTION_DUR_LEN     6
-
-#define BMI270_NOMOTION_SEL_BIT     0
-#define BMI270_NOMOTION_SEL_LEN     1
-
-#define BMI270_RA_INT_LOWHIGH_0     0x5A
-#define BMI270_RA_INT_LOWHIGH_1     0x5B
-#define BMI270_RA_INT_LOWHIGH_2     0x5C
-#define BMI270_RA_INT_LOWHIGH_3     0x5D
-#define BMI270_RA_INT_LOWHIGH_4     0x5E
-
-#define BMI270_RA_INT_MOTION_0      0x5F
-#define BMI270_RA_INT_MOTION_1      0x60
-#define BMI270_RA_INT_MOTION_2      0x61
-#define BMI270_RA_INT_MOTION_3      0x62
-
-#define BMI270_TAP_DUR_BIT          0
-#define BMI270_TAP_DUR_LEN          3
-#define BMI270_TAP_SHOCK_BIT        6
-#define BMI270_TAP_QUIET_BIT        7
-#define BMI270_TAP_THRESH_BIT       0
-#define BMI270_TAP_THRESH_LEN       5
-
-#define BMI270_RA_INT_TAP_0         0x63
-#define BMI270_RA_INT_TAP_1         0x64
 
 #define BMI270_FOC_ACC_Z_BIT        0
 #define BMI270_FOC_ACC_Z_LEN        2
@@ -411,28 +314,6 @@ typedef enum {
 
 #define BMI270_RA_STEP_CNT_L        0x78
 #define BMI270_RA_STEP_CNT_H        0x79
-
-#define BMI270_STEP_BUF_MIN_BIT     0
-#define BMI270_STEP_BUF_MIN_LEN     3
-#define BMI270_STEP_CNT_EN_BIT      3
-
-#define BMI270_STEP_TIME_MIN_BIT    0
-#define BMI270_STEP_TIME_MIN_LEN    3
-#define BMI270_STEP_THRESH_MIN_BIT  3
-#define BMI270_STEP_THRESH_MIN_LEN  2
-#define BMI270_STEP_ALPHA_BIT       5
-#define BMI270_STEP_ALPHA_LEN       3
-
-#define BMI270_RA_STEP_CONF_0       0x7A
-#define BMI270_RA_STEP_CONF_1       0x7B
-
-#define BMI270_RA_STEP_CONF_0_NOR   0x15
-#define BMI270_RA_STEP_CONF_0_SEN   0x2D
-#define BMI270_RA_STEP_CONF_0_ROB   0x1D
-#define BMI270_RA_STEP_CONF_1_NOR   0x03
-#define BMI270_RA_STEP_CONF_1_SEN   0x00
-#define BMI270_RA_STEP_CONF_1_ROB   0x07
-
 
 #define BMI270_CMD_START_FOC        0x03
 #define BMI270_CMD_ACC_MODE_NORMAL  0x11
@@ -459,144 +340,6 @@ typedef enum {
 #define BMI270_FIFO_M_LEN 8
 #define BMI270_FIFO_G_LEN 6
 #define BMI270_FIFO_A_LEN 6
-
-/**
- * Interrupt Latch Mode options
- * @see setInterruptLatch()
- */
-typedef enum {
-    BMI270_LATCH_MODE_NONE = 0, /**< Non-latched */
-    BMI270_LATCH_MODE_312_5_US, /**< Temporary, 312.50 microseconds */
-    BMI270_LATCH_MODE_625_US,   /**< Temporary, 625.00 microseconds */
-    BMI270_LATCH_MODE_1_25_MS,  /**< Temporary,   1.25 milliseconds */
-    BMI270_LATCH_MODE_2_5_MS,   /**< Temporary,   2.50 milliseconds */
-    BMI270_LATCH_MODE_5_MS,     /**< Temporary,   5.00 milliseconds */
-    BMI270_LATCH_MODE_10_MS,    /**< Temporary,  10.00 milliseconds */
-    BMI270_LATCH_MODE_20_MS,    /**< Temporary,  20.00 milliseconds */
-    BMI270_LATCH_MODE_40_MS,    /**< Temporary,  40.00 milliseconds */
-    BMI270_LATCH_MODE_80_MS,    /**< Temporary,  80.00 milliseconds */
-    BMI270_LATCH_MODE_160_MS,   /**< Temporary, 160.00 milliseconds */
-    BMI270_LATCH_MODE_320_MS,   /**< Temporary, 320.00 milliseconds */
-    BMI270_LATCH_MODE_640_MS,   /**< Temporary, 640.00 milliseconds */
-    BMI270_LATCH_MODE_1_28_S,   /**< Temporary,   1.28 seconds      */
-    BMI270_LATCH_MODE_2_56_S,   /**< Temporary,   2.56 seconds      */
-    BMI270_LATCH_MODE_LATCH,    /**< Latched, @see resetInterrupt() */
-} BMI270InterruptLatchMode;
-
-/**
- * Step Detection Mode options
- * @see setStepDetectionMode()
- */
-typedef enum {
-    BMI270_STEP_MODE_NORMAL = 0,
-    BMI270_STEP_MODE_SENSITIVE,
-    BMI270_STEP_MODE_ROBUST,
-    BMI270_STEP_MODE_UNKNOWN,
-} BMI270StepMode;
-
-/**
- * Tap Detection Shock Duration options
- * @see setTapShockDuration()
- */
-typedef enum {
-    BMI270_TAP_SHOCK_DURATION_50MS = 0,
-    BMI270_TAP_SHOCK_DURATION_75MS,
-} BMI270TapShockDuration;
-
-/**
- * Tap Detection Quiet Duration options
- * @see setTapQuietDuration()
- */
-typedef enum {
-    BMI270_TAP_QUIET_DURATION_30MS = 0,
-    BMI270_TAP_QUIET_DURATION_20MS,
-} BMI270TapQuietDuration;
-
-/**
- * Double-Tap Detection Duration options
- * @see setDoubleTapDetectionDuration()
- */
-typedef enum {
-    BMI270_DOUBLE_TAP_DURATION_50MS = 0,
-    BMI270_DOUBLE_TAP_DURATION_100MS,
-    BMI270_DOUBLE_TAP_DURATION_150MS,
-    BMI270_DOUBLE_TAP_DURATION_200MS,
-    BMI270_DOUBLE_TAP_DURATION_250MS,
-    BMI270_DOUBLE_TAP_DURATION_375MS,
-    BMI270_DOUBLE_TAP_DURATION_500MS,
-    BMI270_DOUBLE_TAP_DURATION_700MS,
-} BMI270DoubleTapDuration;
-
-/**
- * Zero-Motion Detection Duration options
- * @see setZeroMotionDetectionDuration()
- */
-typedef enum {
-    BMI270_ZERO_MOTION_DURATION_1_28S   = 0x00, /**<   1.28 seconds */
-    BMI270_ZERO_MOTION_DURATION_2_56S,          /**<   2.56 seconds */
-    BMI270_ZERO_MOTION_DURATION_3_84S,          /**<   3.84 seconds */
-    BMI270_ZERO_MOTION_DURATION_5_12S,          /**<   5.12 seconds */
-    BMI270_ZERO_MOTION_DURATION_6_40S,          /**<   6.40 seconds */
-    BMI270_ZERO_MOTION_DURATION_7_68S,          /**<   7.68 seconds */
-    BMI270_ZERO_MOTION_DURATION_8_96S,          /**<   8.96 seconds */
-    BMI270_ZERO_MOTION_DURATION_10_24S,         /**<  10.24 seconds */
-    BMI270_ZERO_MOTION_DURATION_11_52S,         /**<  11.52 seconds */
-    BMI270_ZERO_MOTION_DURATION_12_80S,         /**<  12.80 seconds */
-    BMI270_ZERO_MOTION_DURATION_14_08S,         /**<  14.08 seconds */
-    BMI270_ZERO_MOTION_DURATION_15_36S,         /**<  15.36 seconds */
-    BMI270_ZERO_MOTION_DURATION_16_64S,         /**<  16.64 seconds */
-    BMI270_ZERO_MOTION_DURATION_17_92S,         /**<  17.92 seconds */
-    BMI270_ZERO_MOTION_DURATION_19_20S,         /**<  19.20 seconds */
-    BMI270_ZERO_MOTION_DURATION_20_48S,         /**<  20.48 seconds */
-    BMI270_ZERO_MOTION_DURATION_25_60S  = 0x10, /**<  25.60 seconds */
-    BMI270_ZERO_MOTION_DURATION_30_72S,         /**<  30.72 seconds */
-    BMI270_ZERO_MOTION_DURATION_35_84S,         /**<  35.84 seconds */
-    BMI270_ZERO_MOTION_DURATION_40_96S,         /**<  40.96 seconds */
-    BMI270_ZERO_MOTION_DURATION_46_08S,         /**<  46.08 seconds */
-    BMI270_ZERO_MOTION_DURATION_51_20S,         /**<  51.20 seconds */
-    BMI270_ZERO_MOTION_DURATION_56_32S,         /**<  56.32 seconds */
-    BMI270_ZERO_MOTION_DURATION_61_44S,         /**<  61.44 seconds */
-    BMI270_ZERO_MOTION_DURATION_66_56S,         /**<  66.56 seconds */
-    BMI270_ZERO_MOTION_DURATION_71_68S,         /**<  71.68 seconds */
-    BMI270_ZERO_MOTION_DURATION_76_80S,         /**<  76.80 seconds */
-    BMI270_ZERO_MOTION_DURATION_81_92S,         /**<  81.92 seconds */
-    BMI270_ZERO_MOTION_DURATION_87_04S,         /**<  87.04 seconds */
-    BMI270_ZERO_MOTION_DURATION_92_16S,         /**<  92.16 seconds */
-    BMI270_ZERO_MOTION_DURATION_97_28S,         /**<  97.28 seconds */
-    BMI270_ZERO_MOTION_DURATION_102_40S,        /**< 102.40 seconds */
-    BMI270_ZERO_MOTION_DURATION_112_64S = 0x20, /**< 112.64 seconds */
-    BMI270_ZERO_MOTION_DURATION_122_88S,        /**< 122.88 seconds */
-    BMI270_ZERO_MOTION_DURATION_133_12S,        /**< 133.12 seconds */
-    BMI270_ZERO_MOTION_DURATION_143_36S,        /**< 143.36 seconds */
-    BMI270_ZERO_MOTION_DURATION_153_60S,        /**< 153.60 seconds */
-    BMI270_ZERO_MOTION_DURATION_163_84S,        /**< 163.84 seconds */
-    BMI270_ZERO_MOTION_DURATION_174_08S,        /**< 174.08 seconds */
-    BMI270_ZERO_MOTION_DURATION_184_32S,        /**< 184.32 seconds */
-    BMI270_ZERO_MOTION_DURATION_194_56S,        /**< 194.56 seconds */
-    BMI270_ZERO_MOTION_DURATION_204_80S,        /**< 204.80 seconds */
-    BMI270_ZERO_MOTION_DURATION_215_04S,        /**< 215.04 seconds */
-    BMI270_ZERO_MOTION_DURATION_225_28S,        /**< 225.28 seconds */
-    BMI270_ZERO_MOTION_DURATION_235_52S,        /**< 235.52 seconds */
-    BMI270_ZERO_MOTION_DURATION_245_76S,        /**< 245.76 seconds */
-    BMI270_ZERO_MOTION_DURATION_256_00S,        /**< 256.00 seconds */
-    BMI270_ZERO_MOTION_DURATION_266_24S,        /**< 266.24 seconds */
-    BMI270_ZERO_MOTION_DURATION_276_48S,        /**< 276.48 seconds */
-    BMI270_ZERO_MOTION_DURATION_286_72S,        /**< 286.72 seconds */
-    BMI270_ZERO_MOTION_DURATION_296_96S,        /**< 296.96 seconds */
-    BMI270_ZERO_MOTION_DURATION_307_20S,        /**< 307.20 seconds */
-    BMI270_ZERO_MOTION_DURATION_317_44S,        /**< 317.44 seconds */
-    BMI270_ZERO_MOTION_DURATION_327_68S,        /**< 327.68 seconds */
-    BMI270_ZERO_MOTION_DURATION_337_92S,        /**< 337.92 seconds */
-    BMI270_ZERO_MOTION_DURATION_348_16S,        /**< 348.16 seconds */
-    BMI270_ZERO_MOTION_DURATION_358_40S,        /**< 358.40 seconds */
-    BMI270_ZERO_MOTION_DURATION_368_64S,        /**< 368.64 seconds */
-    BMI270_ZERO_MOTION_DURATION_378_88S,        /**< 378.88 seconds */
-    BMI270_ZERO_MOTION_DURATION_389_12S,        /**< 389.12 seconds */
-    BMI270_ZERO_MOTION_DURATION_399_36S,        /**< 399.36 seconds */
-    BMI270_ZERO_MOTION_DURATION_409_60S,        /**< 409.60 seconds */
-    BMI270_ZERO_MOTION_DURATION_419_84S,        /**< 419.84 seconds */
-    BMI270_ZERO_MOTION_DURATION_430_08S,        /**< 430.08 seconds */
-} BMI270ZeroMotionDuration;
 
 class BMI270 {
     public:
@@ -657,89 +400,12 @@ class BMI270 {
         int8_t getZAccelOffset();
         void setZAccelOffset(int8_t offset);
 
-        uint8_t getFreefallDetectionThreshold();
-        void setFreefallDetectionThreshold(uint8_t threshold);
-
-        uint8_t getFreefallDetectionDuration();
-        void setFreefallDetectionDuration(uint8_t duration);
-
-        uint8_t getShockDetectionThreshold();
-        void setShockDetectionThreshold(uint8_t threshold);
-
-        uint8_t getShockDetectionDuration();
-        void setShockDetectionDuration(uint8_t duration);
-
-        uint8_t getMotionDetectionThreshold();
-        void setMotionDetectionThreshold(uint8_t threshold);
-
-        uint8_t getMotionDetectionDuration();
-        void setMotionDetectionDuration(uint8_t duration);
-
-        uint8_t getZeroMotionDetectionThreshold();
-        void setZeroMotionDetectionThreshold(uint8_t threshold);
-
-        uint8_t getZeroMotionDetectionDuration();
-        void setZeroMotionDetectionDuration(uint8_t duration);
-
-        uint8_t getTapDetectionThreshold();
-        void setTapDetectionThreshold(uint8_t threshold);
-
-        bool getTapShockDuration();
-        void setTapShockDuration(bool duration);
-
-        bool getTapQuietDuration();
-        void setTapQuietDuration(bool duration);
-
-        uint8_t getDoubleTapDetectionDuration();
-        void setDoubleTapDetectionDuration(uint8_t duration);
-
-        uint8_t getStepDetectionMode();
-        void setStepDetectionMode(BMI270StepMode mode);
-        bool getStepCountEnabled();
-        void setStepCountEnabled(bool enabled);
-        uint16_t getStepCount();
-        void resetStepCount();
-
-        bool getIntFreefallEnabled();
-        void setIntFreefallEnabled(bool enabled);
-        bool getIntShockEnabled();
-        void setIntShockEnabled(bool enabled);
-        bool getIntStepEnabled();
-        void setIntStepEnabled(bool enabled);
-        bool getIntMotionEnabled();
-        void setIntMotionEnabled(bool enabled);
-        bool getIntZeroMotionEnabled();
-        void setIntZeroMotionEnabled(bool enabled);
-        bool getIntTapEnabled();
-        void setIntTapEnabled(bool enabled);
-        bool getIntDoubleTapEnabled();
-        void setIntDoubleTapEnabled(bool enabled);
-
         bool getGyroFIFOEnabled();
         void setGyroFIFOEnabled(bool enabled);
         bool getAccelFIFOEnabled();
         void setAccelFIFOEnabled(bool enabled);
         bool getMagFIFOEnabled();
         void setMagFIFOEnabled(bool enabled);
-
-        bool getIntFIFOBufferFullEnabled();
-        void setIntFIFOBufferFullEnabled(bool enabled);
-        bool getIntDataReadyEnabled();
-        void setIntDataReadyEnabled(bool enabled);
-
-        uint8_t getIntStatus0();
-        uint8_t getIntStatus1();
-        uint8_t getIntStatus2();
-        uint8_t getIntStatus3();
-        bool getIntFreefallStatus();
-        bool getIntShockStatus();
-        bool getIntStepStatus();
-        bool getIntMotionStatus();
-        bool getIntZeroMotionStatus();
-        bool getIntTapStatus();
-        bool getIntDoubleTapStatus();
-        bool getIntFIFOBufferFullStatus();
-        bool getIntDataReadyStatus();
 
         void getMotion6(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz);
         void getAcceleration(int16_t* x, int16_t* y, int16_t* z);
@@ -757,27 +423,6 @@ class BMI270 {
         int16_t getRotationY();
         int16_t getRotationZ();
 
-        bool getXNegShockDetected();
-        bool getXPosShockDetected();
-        bool getYNegShockDetected();
-        bool getYPosShockDetected();
-        bool getZNegShockDetected();
-        bool getZPosShockDetected();
-
-        bool getXNegMotionDetected();
-        bool getXPosMotionDetected();
-        bool getYNegMotionDetected();
-        bool getYPosMotionDetected();
-        bool getZNegMotionDetected();
-        bool getZPosMotionDetected();
-
-        bool getXNegTapDetected();
-        bool getXPosTapDetected();
-        bool getYNegTapDetected();
-        bool getYPosTapDetected();
-        bool getZNegTapDetected();
-        bool getZPosTapDetected();
-
         bool getFIFOHeaderModeEnabled();
         void setFIFOHeaderModeEnabled(bool enabled);
         void resetFIFO();
@@ -790,16 +435,6 @@ class BMI270 {
         uint8_t getRegister(uint8_t reg);
         void setRegister(uint8_t reg, uint8_t data);
 
-        bool getIntEnabled();
-        void setIntEnabled(bool enabled);
-        bool getInterruptMode();
-        void setInterruptMode(bool mode);
-        bool getInterruptDrive();
-        void setInterruptDrive(bool drive);
-        uint8_t getInterruptLatch();
-        void setInterruptLatch(uint8_t latch);
-        void resetInterrupt();
-        
         bool getGyroDrdy();
         void waitForGyroDrdy();
         void waitForAccelDrdy();
