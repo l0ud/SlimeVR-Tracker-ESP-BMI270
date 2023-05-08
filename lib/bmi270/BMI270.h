@@ -88,6 +88,7 @@ THE SOFTWARE.
 #define BMI270_GYRO_DLPF_SEL_BIT    4
 #define BMI270_GYRO_DLPF_SEL_LEN    2
 
+#define BMI270_GYRO_NOISE_PERF_BIT  6
 
 #define BMI270_RA_MAG_X_L           0x04
 #define BMI270_RA_MAG_X_H           0x05
@@ -618,14 +619,10 @@ class BMI270 {
 
         bool testConnection();
 
-        uint8_t getGyroRate();
         void setGyroRate(uint8_t rate);
-
-        uint8_t getAccelRate();
         void setAccelRate(uint8_t rate);
-
-        uint8_t getGyroDLPFMode();
         void setGyroDLPFMode(uint8_t bandwidth);
+        void setGyroFilterPerfMode(bool highPerf);
 
         uint8_t getAccelDLPFMode();
         void setAccelDLPFMode(uint8_t bandwidth);
@@ -638,6 +635,7 @@ class BMI270 {
         void autoCalibrateGyroOffset();
         bool getGyroOffsetEnabled();
         void setGyroOffsetEnabled(bool enabled);
+        void setAutoGyroRetrimming(bool enable);
 
         int16_t getXGyroOffset();
         void setXGyroOffset(int16_t offset);
@@ -812,7 +810,6 @@ class BMI270 {
 
         bool getErrReg(uint8_t* out);
         uint8_t getZXFactor();
-        void setAutoGyroRetrimming(bool enable);
         void selectFeaturePage(uint8_t page);
     private:
         uint8_t buffer[14];

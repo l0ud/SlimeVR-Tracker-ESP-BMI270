@@ -132,6 +132,7 @@ void BMI270Sensor::motionSetup() {
     zx_cross_factor = imu.getZXFactor();
     imu.setAutoGyroRetrimming(BMI270_USE_AUTO_GYR_TRIMMING);
     imu.setGyroOffsetEnabled(BMI270_USE_AUTO_GYR_TRIMMING);
+    imu.setGyroFilterPerfMode(BMI270_GYR_HIGH_PERF_NOISE_FILTER);
     imu.powerUp();
 
     // Initialize the configuration

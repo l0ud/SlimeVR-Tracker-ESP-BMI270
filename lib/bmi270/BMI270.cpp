@@ -146,7 +146,6 @@ uint8_t BMI270::getZXFactor()
 void BMI270::setAutoGyroRetrimming(bool enable)
 {
     selectFeaturePage(1);
-     ;
     I2CdevMod::readBytes(devAddr, BMI270_RA_GEN_SET_1, 2, buffer);
 
     uint16_t feature_reg = (((int16_t)buffer[1]) << 8) | buffer[0];
@@ -266,6 +265,12 @@ void BMI270::setGyroDLPFMode(uint8_t mode) {
     I2CdevMod::writeBits(devAddr, BMI270_RA_GYRO_CONF,
                           BMI270_GYRO_DLPF_SEL_BIT,
                           BMI270_GYRO_DLPF_SEL_LEN, mode);
+}
+
+void BMI270::setGyroFilterPerfMode(bool highPerf) {
+    I2CdevMod::writeBits(devAddr, BMI270_RA_GYRO_CONF,
+                          BMI270_GYRO_NOISE_PERF_BIT,
+                          1, highPerf ? 1 : 0);
 }
 
 /** Set accelerometer digital low-pass filter configuration.
