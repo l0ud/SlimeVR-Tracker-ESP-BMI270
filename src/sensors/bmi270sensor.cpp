@@ -35,12 +35,6 @@ void BMI270Sensor::initHMC(BMI270MagRate magRate) {
     imu.setRegister(BMI270_RA_CMD, BMI270_CMD_MAG_MODE_NORMAL);
     delay(60);
 
-    imu.setRegister(BMI270_RA_CMD, BMI270_EN_PULL_UP_REG_1);
-    imu.setRegister(BMI270_RA_CMD, BMI270_EN_PULL_UP_REG_2);
-    imu.setRegister(BMI270_RA_CMD, BMI270_EN_PULL_UP_REG_3);
-    imu.setRegister(BMI270_7F, BMI270_EN_PULL_UP_REG_4);
-    imu.setRegister(BMI270_7F, BMI270_EN_PULL_UP_REG_5);
-
     // Enable MAG interface
     imu.setRegister(BMI270_RA_IF_CONF, BMI270_IF_CONF_MODE_PRI_AUTO_SEC_MAG);
     delay(1);
@@ -68,12 +62,6 @@ void BMI270Sensor::initQMC(BMI270MagRate magRate) {
     /*
     imu.setRegister(BMI270_RA_CMD, BMI270_CMD_MAG_MODE_NORMAL);
     delay(60);
-
-    imu.setRegister(BMI270_RA_CMD, BMI270_EN_PULL_UP_REG_1);
-    imu.setRegister(BMI270_RA_CMD, BMI270_EN_PULL_UP_REG_2);
-    imu.setRegister(BMI270_RA_CMD, BMI270_EN_PULL_UP_REG_3);
-    imu.setRegister(BMI270_7F, BMI270_EN_PULL_UP_REG_4);
-    imu.setRegister(BMI270_7F, BMI270_EN_PULL_UP_REG_5);
 
     // Enable MAG interface
     imu.setRegister(BMI270_RA_IF_CONF, BMI270_IF_CONF_MODE_PRI_AUTO_SEC_MAG);
@@ -840,7 +828,7 @@ void BMI270Sensor::maybeCalibrateGyro() {
         static_assert(false, "BMI270_CALIBRATION_GYRO_SECONDS not set in defines");
     #endif
 
-    #if BMI270_CALIBRATION_GYRO_SECONDS == 0
+    #if (BMI270_CALIBRATION_GYRO_SECONDS == 0) || (BMI270_USE_AUTO_GYR_TRIMMING == true)
         m_Logger.debug("Skipping gyro calibration");
         return;
     #endif

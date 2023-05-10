@@ -169,6 +169,8 @@ THE SOFTWARE.
 #define BMI270_RA_GEN_SET_1         0x34
 #define BMI270_GYR_SELF_OFFSET_BIT  9
 
+#define BMI270_FIFO_DATA_INVALID    0x80
+
 /**
  * Accelerometer Output Data Rate options
  * @see setAccelRate()
@@ -283,14 +285,6 @@ typedef enum {
 
 #define BMI270_CMD_MAG_MODE_NORMAL  0x19
 
-#define BMI270_EN_PULL_UP_REG_1     0x37
-#define BMI270_EN_PULL_UP_REG_2     0x9A
-#define BMI270_EN_PULL_UP_REG_3     0xC0
-#define BMI270_EN_PULL_UP_REG_4     0x90
-#define BMI270_EN_PULL_UP_REG_5     0x80
-
-#define BMI270_7F                   0x7F
-
 #define BMI270_ACC_PMU_STATUS_BIT   4
 #define BMI270_ACC_PMU_STATUS_LEN   2
 #define BMI270_GYR_PMU_STATUS_BIT   2
@@ -299,8 +293,6 @@ typedef enum {
 
 #define BMI270_STATUS_FOC_RDY       3
 #define BMI270_STATUS_NVM_RDY       4
-
-#define BMI270_FIFO_DATA_INVALID    0x80
 
 #define BMI270_FOC_ACC_Z_BIT        0
 #define BMI270_FOC_ACC_Z_LEN        2
