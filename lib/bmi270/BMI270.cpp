@@ -113,7 +113,7 @@ bool BMI270::initialize(uint8_t addr,
     I2CdevMod::readByte(devAddr, BMI270_RA_STATUS, buffer);
     printf("BMI270: STATUS: 0x%x\n", buffer[0]);
 
-    printf("BMI270: ZX FACTOR: 0x%x\n", getZXFactor());
+    printf("BMI270: ZX FACTOR: %d\n", getZXFactor());
 
     return true;
 }
@@ -136,11 +136,13 @@ bool BMI270::getErrReg(uint8_t* out) {
     return true;
 }
 
-uint8_t BMI270::getZXFactor()
+int8_t BMI270::getZXFactor()
 {
     selectFeaturePage(0);
     I2CdevMod::readByte(devAddr, BMI270_RA_GYR_CAS, buffer);
-    return buffer[0];
+    // convert 7-bit two's complement value to 8-bit one, copying 7th bit (sign) to 8th bit
+    const uint8_t sign_byte = (buffer[0] << 1) & 0x80;
+    return (int8_t)(buffer[0] | sign_byte);
 }
 
 void BMI270::setAutoGyroRetrimming(bool enable)

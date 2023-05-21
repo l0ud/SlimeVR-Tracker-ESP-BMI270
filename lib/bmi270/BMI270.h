@@ -436,7 +436,7 @@ class BMI270 {
         bool setMagRegister(uint8_t addr, uint8_t value);
 
         bool getErrReg(uint8_t* out);
-        uint8_t getZXFactor();
+        int8_t getZXFactor();
         void selectFeaturePage(uint8_t page);
     private:
         uint8_t buffer[14];

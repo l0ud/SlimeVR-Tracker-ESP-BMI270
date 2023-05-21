@@ -232,7 +232,7 @@ class BMI270Sensor : public Sensor {
         uint32_t samplesSinceClockSync = 0;
         uint32_t timestamp0 = 0;
         uint32_t timestamp1 = 0;
-        uint8_t zx_cross_factor = 0;
+        int8_t zx_cross_factor = 0;
 
         // scheduling
         uint32_t lastPollTime = micros();
