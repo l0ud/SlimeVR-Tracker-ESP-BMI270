@@ -53,9 +53,12 @@
 // post-process X axis for better gyroscope CAS performance 
 #define BMI270_APPLY_ZX_CROSS_AXIS_FACTOR true
 
-// enable automatic gyroscope retrimming (calibration) functionality in BMI270
+// enable gyroscope In-use Offset Compensation functionality (IOC) in BMI270
 // this is internal BMI270 feature and doesn't affect other calibration options
-#define BMI270_USE_AUTO_GYR_TRIMMING true
+#define BMI270_USE_GYR_IOC true
+
+// enable fast, motionless sensitivity Error Compensation for gyroscope during calibration process
+#define BMI270_USE_GYR_CRT true
 
 // enable or disable low noise mode for precision yaw rate sensing
 // increases power usage
@@ -88,9 +91,9 @@
 #define BMI270_TEMPCAL_DEBUG false
 
 // Print debug info every second.
-#define BMI270_DEBUG true
+#define BMI270_DEBUG false
 
-// Use sensitivity calibration.
-#define BMI270_USE_SENSCAL true
+// Use manual sensitivity calibration.
+#define BMI270_USE_SENSCAL false
 
 #endif

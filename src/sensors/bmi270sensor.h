@@ -183,7 +183,8 @@ class BMI270Sensor : public Sensor {
         void applyAccelCalibrationAndScale(sensor_real_t Axyz[3]);
         void applyMagCalibrationAndScale(sensor_real_t Mxyz[3]);
 
-        bool hasGyroCalibration();
+        bool hasGyroOffsetCalibration();
+        bool hasGyroSensCalibration();
         bool hasAccelCalibration();
         bool hasMagCalibration();
 
@@ -268,7 +269,8 @@ class BMI270Sensor : public Sensor {
 
         double GOxyzStaticTempCompensated[3];
 
-        bool isGyroCalibrated = false;
+        bool isGyroOffsetCalibrated = false;
+        bool isGyroSensCalibrated = false;
         bool isAccelCalibrated = false;
         bool isMagCalibrated = false;
 

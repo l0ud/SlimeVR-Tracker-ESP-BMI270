@@ -48,6 +48,9 @@ THE SOFTWARE.
 #define BMI270_CMD_SOFT_RESET       0xB6
 #define BMI270_CMD_FIFO_FLUSH       0xB0
 
+#define BMI270_CMD_G_TRIGGER        0x02
+
+
 #define BMI270_RA_PWR_CONF          0x7C
 #define BMI270_RA_INIT_CTRL         0x59
 #define BMI_RA_INIT_ADDR_0          0x5B
@@ -127,7 +130,7 @@ THE SOFTWARE.
 #define BMI270_ACC_OFFSET_EN        3
 
 #define BMI270_GYR_OFFSET_EN        6
-
+#define BMI270_GYR_GAIN_EN          7
 
 #define BMI270_RA_OFFSET_0          0x71
 #define BMI270_RA_OFFSET_1          0x72
@@ -170,6 +173,18 @@ THE SOFTWARE.
 #define BMI270_GYR_SELF_OFFSET_BIT  9
 
 #define BMI270_FIFO_DATA_INVALID    0x80
+
+#define BMI270_RA_GYR_CRT_CONF      0x69 //nice
+#define BMI270_CRT_RUNNING_BIT      2
+
+#define BMI270_RA_G_TRIG_1          0x32
+#define BMI270_FEATURE_SELECT_BIT   8
+#define BMI270_FEATURE_BLOCK_BIT    9
+#define BMI270_FEATURE_CRT          1
+#define BMI270_RA_GYR_GAIN_STATUS   0x38 // feature page 0
+#define BMI270_G_TRIG_STATUS_OFFSET 3
+
+#define BMI270_RA_GYR_USR_GAIN_0    0x78 // not documented, got from bmi270 driver
 
 /**
  * Accelerometer Output Data Rate options
@@ -346,7 +361,7 @@ class BMI270 {
             BMI270DLPFMode accelFilterMode = BMI270_DLPF_MODE_OSR4
         );
 
-        void powerUp();
+        void powerUp(uint8_t gyroscope, uint8_t accelerometer, uint8_t temperature);
 
 
         uint8_t getInternalStatus();
@@ -370,7 +385,7 @@ class BMI270 {
         void autoCalibrateGyroOffset();
         bool getGyroOffsetEnabled();
         void setGyroOffsetEnabled(bool enabled);
-        void setAutoGyroRetrimming(bool enable);
+        void setGyroIOC(bool enable);
 
         int16_t getXGyroOffset();
         void setXGyroOffset(int16_t offset);
@@ -438,6 +453,9 @@ class BMI270 {
         bool getErrReg(uint8_t* out);
         int8_t getZXFactor();
         void selectFeaturePage(uint8_t page);
+        bool performCRT(uint8_t &gainX, uint8_t &gainY, uint8_t &gainZ);
+        void applyGyroGain(uint8_t &gainX, uint8_t &gainY, uint8_t &gainZ);
+
     private:
         uint8_t buffer[14];
         uint8_t devAddr;

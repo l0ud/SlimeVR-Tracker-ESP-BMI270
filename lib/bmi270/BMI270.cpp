@@ -118,10 +118,10 @@ bool BMI270::initialize(uint8_t addr,
     return true;
 }
 
-void BMI270::powerUp() {
+void BMI270::powerUp(uint8_t gyroscope, uint8_t accelerometer, uint8_t temperature) {
     // enable power to accelerometer, gyroscope and temperature sensor
-    printf("Value to pwr ctrl 0x%x\n", (1 << BMI270_PWR_GYR_BIT) | (1 << BMI270_PWR_ACC_BIT) | (1 << BMI270_PWR_TEMP_BIT));
-    setRegister(BMI270_RA_PWR_CTRL, (1 << BMI270_PWR_GYR_BIT) | (1 << BMI270_PWR_ACC_BIT) | (1 << BMI270_PWR_TEMP_BIT));
+    printf("Value to pwr ctrl 0x%x\n", (gyroscope << BMI270_PWR_GYR_BIT) | (accelerometer << BMI270_PWR_ACC_BIT) | (temperature << BMI270_PWR_TEMP_BIT));
+    setRegister(BMI270_RA_PWR_CTRL, (gyroscope << BMI270_PWR_GYR_BIT) | (accelerometer << BMI270_PWR_ACC_BIT) | (temperature << BMI270_PWR_TEMP_BIT));
     delay(BMI270_POWERUP_DELAY_MS);
 
     I2CdevMod::readByte(devAddr, BMI270_RA_PWR_CTRL, buffer);
@@ -145,12 +145,12 @@ int8_t BMI270::getZXFactor()
     return (int8_t)(buffer[0] | sign_byte);
 }
 
-void BMI270::setAutoGyroRetrimming(bool enable)
+void BMI270::setGyroIOC(bool enable)
 {
     selectFeaturePage(1);
     I2CdevMod::readBytes(devAddr, BMI270_RA_GEN_SET_1, 2, buffer);
 
-    uint16_t feature_reg = (((int16_t)buffer[1]) << 8) | buffer[0];
+    uint16_t feature_reg = (((uint16_t)buffer[1]) << 8) | buffer[0];
     printf("BMI270: Features read: 0x%x\n", feature_reg);
 
     if (enable) {
@@ -159,7 +159,7 @@ void BMI270::setAutoGyroRetrimming(bool enable)
     else {
         feature_reg &= ~((uint16_t)1 << BMI270_GYR_SELF_OFFSET_BIT);
     }
-        printf("BMI270: Features to write: 0x%x\n", feature_reg);
+    printf("BMI270: Features to write: 0x%x\n", feature_reg);
 
     buffer[0] = (uint8_t)feature_reg;
     buffer[1] = (uint8_t)(feature_reg >> 8);
@@ -168,6 +168,65 @@ void BMI270::setAutoGyroRetrimming(bool enable)
 
 void BMI270::selectFeaturePage(uint8_t page) {
     setRegister(BMI270_RA_FEAT_PAGE, page);
+}
+
+bool BMI270::performCRT(uint8_t &gainX, uint8_t &gainY, uint8_t &gainZ)
+{
+    I2CdevMod::writeBits(devAddr, BMI270_RA_OFFSET_6,
+                          BMI270_GYR_GAIN_EN, 1, 1);
+    // we assume accelerometer is enabled here
+    I2CdevMod::writeBits(devAddr, BMI270_RA_GYR_CRT_CONF,
+                          BMI270_CRT_RUNNING_BIT, 1, 1);
+
+    I2CdevMod::readBytes(devAddr, BMI270_RA_GYR_USR_GAIN_0, 3, buffer);
+
+    I2CdevMod::readBytes(devAddr, BMI270_RA_G_TRIG_1, 2, buffer);
+
+    uint16_t trig_reg = (((uint16_t)buffer[1]) << 8) | buffer[0];
+
+    trig_reg |= ((uint16_t)BMI270_FEATURE_CRT << BMI270_FEATURE_SELECT_BIT);
+    trig_reg &= ~((uint16_t)1 << BMI270_FEATURE_BLOCK_BIT);
+    buffer[0] = (uint8_t)trig_reg;
+    buffer[1] = (uint8_t)(trig_reg >> 8);
+    I2CdevMod::writeBytes(devAddr, BMI270_RA_G_TRIG_1, 2, buffer);
+    I2CdevMod::writeByte(devAddr, BMI270_RA_CMD, BMI270_CMD_G_TRIGGER);
+    delay(200);
+    I2CdevMod::readByte(devAddr, BMI270_RA_GYR_CRT_CONF, buffer);
+    while(buffer[0] & (1 << BMI270_CRT_RUNNING_BIT)) {
+        printf("CRT running. DO NOT MOVE TRACKER!\n");
+        delay(100);
+        I2CdevMod::readByte(devAddr, BMI270_RA_GYR_CRT_CONF, buffer);
+    }
+
+    selectFeaturePage(0);
+    I2CdevMod::readByte(devAddr, BMI270_RA_GYR_GAIN_STATUS, buffer);
+    printf("BMI270: GYR_GAIN_STATUS: 0x%x\n", buffer[0]);
+    const uint8_t status = buffer[0] >> BMI270_G_TRIG_STATUS_OFFSET;
+    if (status != 0) {
+        printf("CRT failed with status 0x%x\n", status);
+        if (status == 0x03) {
+            printf("You moved tracker!\n");
+        }
+        return false;
+    }
+
+    printf("CRT completed successfully!\n");
+
+    I2CdevMod::readBytes(devAddr, BMI270_RA_GYR_USR_GAIN_0, 3, buffer);
+    gainX = buffer[0];
+    gainY = buffer[1];
+    gainZ = buffer[2];
+    return true;
+}
+
+void BMI270::applyGyroGain(uint8_t &gainX, uint8_t &gainY, uint8_t &gainZ)
+{
+    I2CdevMod::writeBits(devAddr, BMI270_RA_OFFSET_6,
+                          BMI270_GYR_GAIN_EN, 1, 1);
+    buffer[0] = gainX;
+    buffer[1] = gainY;
+    buffer[2] = gainZ;
+    I2CdevMod::writeBytes(devAddr, BMI270_RA_GYR_USR_GAIN_0, 3, buffer);
 }
 
 void BMI270::setMagDeviceAddress(uint8_t addr) {

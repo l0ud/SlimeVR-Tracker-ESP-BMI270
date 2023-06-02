@@ -118,10 +118,10 @@ void BMI270Sensor::motionSetup() {
     m_Logger.info("Connected to BMI270 (reported device ID 0x%02x) at address 0x%02x", imu.getDeviceID(), addr);
 
     zx_cross_factor = imu.getZXFactor();
-    imu.setAutoGyroRetrimming(BMI270_USE_AUTO_GYR_TRIMMING);
-    imu.setGyroOffsetEnabled(BMI270_USE_AUTO_GYR_TRIMMING);
+    imu.setGyroIOC(BMI270_USE_GYR_IOC);
+    imu.setGyroOffsetEnabled(BMI270_USE_GYR_IOC);
     imu.setGyroFilterPerfMode(BMI270_GYR_HIGH_PERF_NOISE_FILTER);
-    imu.powerUp();
+    imu.powerUp(0, 1, 1); // no gyroscope yet
 
     // Initialize the configuration
     {
@@ -148,9 +148,7 @@ void BMI270Sensor::motionSetup() {
     //imu.waitForAccelDrdy();
     //m_Logger.info("Done waiting");
     getRemappedAcceleration(&ax, &ay, &az);
-    printf("az = %d typical= %f\n", az, BMI270_ACCEL_TYPICAL_SENSITIVITY_LSB);
     float g_az = (float)az / BMI270_ACCEL_TYPICAL_SENSITIVITY_LSB;
-    printf("g_az = %f\n", g_az);
     if (g_az < -0.75f) {
         ledManager.on();
 
@@ -218,16 +216,27 @@ void BMI270Sensor::motionSetup() {
     }
     #endif
 
-    isGyroCalibrated = hasGyroCalibration();
+    isGyroOffsetCalibrated = hasGyroOffsetCalibration();
+    isGyroSensCalibrated = hasGyroSensCalibration();
     isAccelCalibrated = hasAccelCalibration();
     #if !USE_6_AXIS
     isMagCalibrated = hasMagCalibration();
     #endif
-    m_Logger.info("Calibration data for gyro: %s", isGyroCalibrated ? "found" : "not found");
+    m_Logger.info("Calibration data for gyro offset: %s", isGyroOffsetCalibrated ? "found" : "not found");
+    m_Logger.info("Calibration data for gyro sensitivity: %s", isGyroSensCalibrated ? "found" : "not found");
     m_Logger.info("Calibration data for accel: %s", isAccelCalibrated ? "found" : "not found");
     #if !USE_6_AXIS
     m_Logger.info("Calibration data for mag: %s", isMagCalibrated ? "found" : "not found");
     #endif
+
+    #if BMI270_USE_GYR_CRT
+        if (isGyroSensCalibrated) {
+            m_Logger.info("Applying gyro sensitivity calibration: 0x%x 0x%x 0x%x", m_Calibration.G_gain[0], m_Calibration.G_gain[1], m_Calibration.G_gain[2]);
+            imu.applyGyroGain(m_Calibration.G_gain[0], m_Calibration.G_gain[1], m_Calibration.G_gain[2]);
+        }
+    #endif
+
+    imu.powerUp(1, 1, 1); // power up fully
 
     imu.setFIFOHeaderModeEnabled(true);
     imu.setGyroFIFOEnabled(true);
@@ -767,9 +776,17 @@ void BMI270Sensor::applyMagCalibrationAndScale(sensor_real_t Mxyz[3]) {
     #endif
 }
 
-bool BMI270Sensor::hasGyroCalibration() {
+bool BMI270Sensor::hasGyroOffsetCalibration() {
     for (int i = 0; i < 3; i++) {
         if (m_Calibration.G_off[i] != 0.0)
+            return true;
+    }
+    return false;
+}
+
+bool BMI270Sensor::hasGyroSensCalibration() {
+    for (int i = 0; i < 3; i++) {
+        if (m_Calibration.G_gain[i] != 0)
             return true;
     }
     return false;
@@ -824,18 +841,20 @@ void BMI270Sensor::startCalibration(int calibrationType) {
 }
 
 void BMI270Sensor::maybeCalibrateGyro() {
+    constexpr uint8_t GYRO_CALIBRATION_DELAY_SEC = 5;
+    constexpr float GYRO_CALIBRATION_DURATION_SEC = BMI270_CALIBRATION_GYRO_SECONDS;
+    (void)GYRO_CALIBRATION_DURATION_SEC;
+
     #ifndef BMI270_CALIBRATION_GYRO_SECONDS
         static_assert(false, "BMI270_CALIBRATION_GYRO_SECONDS not set in defines");
     #endif
 
-    #if (BMI270_CALIBRATION_GYRO_SECONDS == 0) || (BMI270_USE_AUTO_GYR_TRIMMING == true)
-        m_Logger.debug("Skipping gyro calibration");
-        return;
-    #endif
+    #if (BMI270_CALIBRATION_GYRO_SECONDS == 0) || (BMI270_USE_GYR_IOC == true)
+        m_Logger.debug("Skipping gyro offset calibration (disabled or using IOC)");
+    #else
 
+    imu.powerUp(1, 1, 1);
     // Wait for sensor to calm down before calibration
-    constexpr uint8_t GYRO_CALIBRATION_DELAY_SEC = 3;
-    constexpr float GYRO_CALIBRATION_DURATION_SEC = BMI270_CALIBRATION_GYRO_SECONDS;
     m_Logger.info("Put down the device and wait for baseline gyro reading calibration (%.1f seconds)", GYRO_CALIBRATION_DURATION_SEC);
     ledManager.on();
     for (uint8_t i = GYRO_CALIBRATION_DELAY_SEC; i > 0; i--) {
@@ -860,7 +879,7 @@ void BMI270Sensor::maybeCalibrateGyro() {
 
     ledManager.pattern(100, 100, 3);
     ledManager.on();
-    m_Logger.info("Gyro calibration started...");
+    m_Logger.info("Gyro offset calibration started...");
 
     constexpr uint16_t gyroCalibrationSamples =
         GYRO_CALIBRATION_DURATION_SEC / (BMI270_ODR_GYR_MICROS / 1e6);
@@ -880,7 +899,31 @@ void BMI270Sensor::maybeCalibrateGyro() {
     m_Calibration.G_off[2] = ((double)rawGxyz[2]) / gyroCalibrationSamples;
 
     #ifdef DEBUG_SENSOR
-        m_Logger.trace("Gyro calibration results: %f %f %f", UNPACK_VECTOR_ARRAY(m_Calibration.G_off));
+        m_Logger.trace("Gyro offset calibration results: %f %f %f", UNPACK_VECTOR_ARRAY(m_Calibration.G_off));
+    #endif
+    #endif
+
+    #if BMI270_USE_GYR_CRT == true
+        imu.powerUp(0, 1, 1); // turn off gyroscope for this calibration
+        m_Logger.info("PUT DOWN the device and wait for gyro CRT calibration (several seconds).");
+        ledManager.on();
+        for (uint8_t i = GYRO_CALIBRATION_DELAY_SEC; i > 0; i--) {
+            m_Logger.info("%i...", i);
+            delay(1000);
+        }
+        ledManager.off();
+        uint8_t gainX, gainY, gainZ;
+        if (!imu.performCRT(gainX, gainY, gainZ)) {
+            m_Logger.error("CRT failed. Restart tracker to try again");
+        }
+        else {
+            m_Logger.info("Gyroscope gain values: X=0x%x, Y=0x%x, Z=0x%x", gainX, gainY, gainZ);
+            m_Calibration.G_gain[0] = gainX;
+            m_Calibration.G_gain[1] = gainY;
+            m_Calibration.G_gain[2] = gainZ;            
+        }
+    #else
+        m_Logger.trace("Skipping gyroscope gain calibration, CRT is disabled");
     #endif
 }
 
