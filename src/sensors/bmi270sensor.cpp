@@ -553,7 +553,7 @@ void BMI270Sensor::readFIFO() {
             if (anew) onAccelRawSample(BMI270_ODR_ACC_MICROS, ax, ay, az);
             if (gnew) {
             #if BMI270_APPLY_ZX_CROSS_AXIS_FACTOR
-                    gx = std::clamp((int32_t)(gx - (int16_t)(((int32_t) zx_cross_factor * (int32_t)gz) / 512)), INT16_MIN, INT16_MAX);                    
+                    gx = std::clamp((int32_t)(gx - (int16_t)(((int32_t) zx_cross_factor * (int32_t)gz) / 512)), (int32_t)INT16_MIN, (int32_t)INT16_MAX);
             #endif
                 constexpr uint32_t alignmentBitmask = ~(0xFFFFFFFF << (16 - BMI270_GYRO_RATE));
                 uint32_t alignmentOffset =
