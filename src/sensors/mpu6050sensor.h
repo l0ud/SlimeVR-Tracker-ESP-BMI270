@@ -49,7 +49,7 @@ private:
     uint8_t fifoBuffer[64]{}; // FIFO storage buffer
 
 #ifndef IMU_MPU6050_RUNTIME_CALIBRATION
-    SlimeVR::Configuration::MPU6050CalibrationConfig m_Calibration;
+    SlimeVR::Configuration::MPU6050CalibrationConfig m_Calibration = {};
 #endif
 };
 

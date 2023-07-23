@@ -56,7 +56,7 @@ private:
     // Loop timing globals
     float deltat = 0;                // sample time in seconds
 
-    SlimeVR::Configuration::MPU9250CalibrationConfig m_Calibration;
+    SlimeVR::Configuration::MPU9250CalibrationConfig m_Calibration = {};
 
     // outputs to respective member variables
     void parseAccelData(int16_t data[3]);

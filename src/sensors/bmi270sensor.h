@@ -267,14 +267,14 @@ class BMI270Sensor : public Sensor {
         double gscaleY = BMI270_GSCALE;
         double gscaleZ = BMI270_GSCALE;
 
-        double GOxyzStaticTempCompensated[3];
+        double GOxyzStaticTempCompensated[3] = {0.0, 0.0, 0.0};
 
         bool isGyroOffsetCalibrated = false;
         bool isGyroSensCalibrated = false;
         bool isAccelCalibrated = false;
         bool isMagCalibrated = false;
 
-        SlimeVR::Configuration::BMI270CalibrationConfig m_Calibration;
+        SlimeVR::Configuration::BMI270CalibrationConfig m_Calibration = {};
 };
 
 #endif
