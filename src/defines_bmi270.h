@@ -48,7 +48,7 @@
 #define BMI270_USE_BASIC_VQF false
 
 // Use temperature calibration.
-#define BMI270_USE_TEMPCAL true
+#define BMI270_USE_TEMPCAL false
 
 // post-process X axis for better gyroscope CAS performance 
 #define BMI270_APPLY_ZX_CROSS_AXIS_FACTOR true

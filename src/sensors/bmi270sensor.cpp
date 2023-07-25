@@ -22,11 +22,14 @@
 */
 
 #include "bmi270sensor.h"
-#include "network/network.h"
 #include "GlobalVars.h"
 #include <hmc5883l.h>
 #include <qmc5883l.h>
 #include <algorithm>
+
+#if BMI270_USE_GYR_IOC && BMI270_USE_TEMPCAL
+    #error "Please do not combine BMI270_USE_GYR_IOC with BMI270_USE_TEMPCAL. Select only one of them in defines_bmi270.h"
+#endif
 
 void BMI270Sensor::initHMC(BMI270MagRate magRate) {
     /* Configure MAG interface and setup mode */
@@ -384,9 +387,9 @@ void BMI270Sensor::motionLoop() {
             lastTemperaturePacketSent = now - (elapsed - sendInterval);
             #if BMI270_TEMPCAL_DEBUG
                 uint32_t isCalibrating = gyroTempCalibrator->isCalibrating() ? 10000 : 0;
-                Network::sendTemperature(isCalibrating + 10000 + (gyroTempCalibrator->config.samplesTotal * 100) + temperature, sensorId);
+                networkConnection.sendTemperature(sensorId, isCalibrating + 10000 + (gyroTempCalibrator->config.samplesTotal * 100) + temperature);
             #else
-                Network::sendTemperature(temperature, sensorId);
+                networkConnection.sendTemperature(sensorId, temperature);
             #endif
             optimistic_yield(100);
         }
@@ -416,9 +419,9 @@ void BMI270Sensor::motionLoop() {
                 return;
             }
 
-            quaternion.set(qwxyz[1], qwxyz[2], qwxyz[3], qwxyz[0]);
+            fusedRotation.set(qwxyz[1], qwxyz[2], qwxyz[3], qwxyz[0]);
 
-            const Quat q = quaternion;
+            const Quat q = fusedRotation;
             sensor_real_t vecGravity[3];
             vecGravity[0] = 2 * (q.x * q.z - q.w * q.y);
             vecGravity[1] = 2 * (q.w * q.x + q.y * q.z);
@@ -429,22 +432,17 @@ void BMI270Sensor::motionLoop() {
             linAccel.y = lastAxyz[1] - vecGravity[1] * CONST_EARTH_GRAVITY;
             linAccel.z = lastAxyz[2] - vecGravity[2] * CONST_EARTH_GRAVITY;
 
-            linearAcceleration[0] = linAccel.x;
-            linearAcceleration[1] = linAccel.y;
-            linearAcceleration[2] = linAccel.z;
+            acceleration[0] = linAccel.x;
+            acceleration[1] = linAccel.y;
+            acceleration[2] = linAccel.z;
+            newAcceleration = true;
 
-            quaternion *= sensorOffset;
+            fusedRotation *= sensorOffset;
 
-            #if ENABLE_INSPECTION
+            if (!OPTIMIZE_UPDATES || !lastFusedRotationSent.equalsWithEpsilon(fusedRotation))
             {
-                Network::sendInspectionFusedIMUData(sensorId, quaternion);
-            }
-            #endif
-
-            if (!OPTIMIZE_UPDATES || !lastQuatSent.equalsWithEpsilon(quaternion))
-            {
-                newData = true;
-                lastQuatSent = quaternion;
+                newFusedRotation = true;
+                lastFusedRotationSent = fusedRotation;
             }
 
             optimistic_yield(100);
@@ -596,9 +594,15 @@ void BMI270Sensor::onGyroRawSample(uint32_t dtMicros, int16_t x, int16_t y, int1
     #endif
 
     sensor_real_t gyroCalibratedStatic[3];
-    gyroCalibratedStatic[0] = (sensor_real_t)((((double)x - m_Calibration.G_off[0]) * gscaleX));
-    gyroCalibratedStatic[1] = (sensor_real_t)((((double)y - m_Calibration.G_off[1]) * gscaleY));
-    gyroCalibratedStatic[2] = (sensor_real_t)((((double)z - m_Calibration.G_off[2]) * gscaleZ));
+    #if BMI270_APPLY_GYRO_OFFSET
+        gyroCalibratedStatic[0] = (sensor_real_t)((((double)x - m_Calibration.G_off[0]) * gscaleX));
+        gyroCalibratedStatic[1] = (sensor_real_t)((((double)y - m_Calibration.G_off[1]) * gscaleY));
+        gyroCalibratedStatic[2] = (sensor_real_t)((((double)z - m_Calibration.G_off[2]) * gscaleZ));
+    #else
+        gyroCalibratedStatic[0] = (sensor_real_t)((double)x * gscaleX);
+        gyroCalibratedStatic[1] = (sensor_real_t)((double)y * gscaleY);
+        gyroCalibratedStatic[2] = (sensor_real_t)((double)z * gscaleZ);
+    #endif
 
     #if BMI270_USE_TEMPCAL
     float GOxyz[3];
@@ -849,7 +853,7 @@ void BMI270Sensor::maybeCalibrateGyro() {
         static_assert(false, "BMI270_CALIBRATION_GYRO_SECONDS not set in defines");
     #endif
 
-    #if (BMI270_CALIBRATION_GYRO_SECONDS == 0) || (BMI270_USE_GYR_IOC == true)
+    #if !BMI270_APPLY_GYRO_OFFSET
         m_Logger.debug("Skipping gyro offset calibration (disabled or using IOC)");
     #else
 

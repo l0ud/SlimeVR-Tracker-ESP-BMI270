@@ -56,6 +56,8 @@
 #define BMI270_ACCEL_RANGE BMI270_ACCEL_RANGE_16G
 #define BMI270_ACCEL_FILTER_MODE BMI270_DLPF_MODE_NORM
 
+#define BMI270_APPLY_GYRO_OFFSET (BMI270_CALIBRATION_GYRO_SECONDS != 0 && BMI270_USE_GYR_IOC == false)
+
 // note: if changing ODR or filter modes - adjust rest detection params and buffer size
 
 #define BMI270_TIMESTAMP_RESOLUTION_MICROS 39.0625f
