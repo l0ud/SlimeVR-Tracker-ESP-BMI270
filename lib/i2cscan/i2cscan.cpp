@@ -118,8 +118,8 @@ namespace I2CSCAN
 #endif
             Wire.beginTransmission(addr);
             error = Wire.endTransmission();
-        }
 #if ESP32C3
+        }
         while (error == 5);
 #endif
         if(error == 0)
