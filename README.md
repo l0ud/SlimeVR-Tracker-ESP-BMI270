@@ -34,9 +34,10 @@ The following IMUs and their corresponding `IMU` values are supported by the fir
 * BMI270 (IMU_BMI270)
   * Based on BMI160 code.
   * Using sensor fusion of Gyroscope and Accelerometer.
-  * Manual calibration is currently unsupported, however BMI270 gyroscope auto-calibration is used.
+  * By default motionless gyroscope sensitivity error compensation is performed during first calibration.
+  * In-use Offset Compensation is supported, but turned off by default (initial testing show worse performance than manual calibration).
+  * Experimental support!
   * Support for magnetometers is currently not implemented.
-  * VERY experimental support!
 * ICM-20948 (IMU_ICM20948)
   * Using fusion in internal DMP for 6Dof or 9DoF, 9DoF mode requires good magnetic environment.
   * Comment out `USE_6DOF` in `debug.h` for 9DoF mode.

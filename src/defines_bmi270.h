@@ -48,14 +48,14 @@
 #define BMI270_USE_BASIC_VQF false
 
 // Use temperature calibration.
-#define BMI270_USE_TEMPCAL false
+#define BMI270_USE_TEMPCAL true
 
 // post-process X axis for better gyroscope CAS performance 
 #define BMI270_APPLY_ZX_CROSS_AXIS_FACTOR true
 
 // enable gyroscope In-use Offset Compensation functionality (IOC) in BMI270
 // this is internal BMI270 feature and doesn't affect other calibration options
-#define BMI270_USE_GYR_IOC true
+#define BMI270_USE_GYR_IOC false
 
 // enable fast, motionless sensitivity Error Compensation for gyroscope during calibration process
 #define BMI270_USE_GYR_CRT true

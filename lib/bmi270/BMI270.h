@@ -353,12 +353,12 @@ class BMI270 {
         BMI270();
         bool initialize(
             uint8_t addr,
-            BMI270GyroRate gyroRate = BMI270_GYRO_RATE_800HZ,
-            BMI270GyroRange gyroRange = BMI270_GYRO_RANGE_500,
-            BMI270DLPFMode gyroFilterMode = BMI270_DLPF_MODE_NORM,
-            BMI270AccelRate accelRate = BMI270_ACCEL_RATE_800HZ,
-            BMI270AccelRange accelRange = BMI270_ACCEL_RANGE_4G,
-            BMI270DLPFMode accelFilterMode = BMI270_DLPF_MODE_OSR4
+            BMI270GyroRate gyroRate,
+            BMI270GyroRange gyroRange,
+            BMI270DLPFMode gyroFilterMode,
+            BMI270AccelRate accelRate,
+            BMI270AccelRange accelRange,
+            BMI270DLPFMode accelFilterMode
         );
 
         void powerUp(uint8_t gyroscope, uint8_t accelerometer, uint8_t temperature);

@@ -1,6 +1,6 @@
 /*
     SlimeVR Code is placed under the MIT license
-    Copyright (c) 2021 S.J. Remington & SlimeVR contributors
+    Copyright (c) 2023 S.J. Remington & SlimeVR contributors
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -147,9 +147,6 @@ void BMI270Sensor::motionSetup() {
     }
 
     int16_t ax, ay, az;
-    //m_Logger.info("Waiting for accel drdy");
-    //imu.waitForAccelDrdy();
-    //m_Logger.info("Done waiting");
     getRemappedAcceleration(&ax, &ay, &az);
     float g_az = (float)az / BMI270_ACCEL_TYPICAL_SENSITIVITY_LSB;
     if (g_az < -0.75f) {
@@ -853,6 +850,30 @@ void BMI270Sensor::maybeCalibrateGyro() {
         static_assert(false, "BMI270_CALIBRATION_GYRO_SECONDS not set in defines");
     #endif
 
+    #if BMI270_USE_GYR_CRT == true
+        //imu.powerUp(0, 1, 1); // turn off gyroscope for this calibration, it should be already powered off
+        m_Logger.info("PUT DOWN the device and wait for gyro CRT calibration (several seconds).");
+        ledManager.on();
+        for (uint8_t i = GYRO_CALIBRATION_DELAY_SEC; i > 0; i--) {
+            m_Logger.info("%i...", i);
+            delay(1000);
+        }
+        ledManager.off();
+        uint8_t gainX, gainY, gainZ;
+        if (!imu.performCRT(gainX, gainY, gainZ)) {
+            m_Logger.error("CRT failed. Restart tracker to try again");
+        }
+        else {
+            m_Logger.info("Gyroscope gain values: X=0x%x, Y=0x%x, Z=0x%x", gainX, gainY, gainZ);
+            m_Calibration.G_gain[0] = gainX;
+            m_Calibration.G_gain[1] = gainY;
+            m_Calibration.G_gain[2] = gainZ;            
+        }
+    #else
+        m_Logger.trace("Skipping gyroscope gain calibration, CRT is disabled");
+    #endif
+
+
     #if !BMI270_APPLY_GYRO_OFFSET
         m_Logger.debug("Skipping gyro offset calibration (disabled or using IOC)");
     #else
@@ -902,32 +923,7 @@ void BMI270Sensor::maybeCalibrateGyro() {
     m_Calibration.G_off[1] = ((double)rawGxyz[1]) / gyroCalibrationSamples;
     m_Calibration.G_off[2] = ((double)rawGxyz[2]) / gyroCalibrationSamples;
 
-    #ifdef DEBUG_SENSOR
-        m_Logger.trace("Gyro offset calibration results: %f %f %f", UNPACK_VECTOR_ARRAY(m_Calibration.G_off));
-    #endif
-    #endif
-
-    #if BMI270_USE_GYR_CRT == true
-        imu.powerUp(0, 1, 1); // turn off gyroscope for this calibration
-        m_Logger.info("PUT DOWN the device and wait for gyro CRT calibration (several seconds).");
-        ledManager.on();
-        for (uint8_t i = GYRO_CALIBRATION_DELAY_SEC; i > 0; i--) {
-            m_Logger.info("%i...", i);
-            delay(1000);
-        }
-        ledManager.off();
-        uint8_t gainX, gainY, gainZ;
-        if (!imu.performCRT(gainX, gainY, gainZ)) {
-            m_Logger.error("CRT failed. Restart tracker to try again");
-        }
-        else {
-            m_Logger.info("Gyroscope gain values: X=0x%x, Y=0x%x, Z=0x%x", gainX, gainY, gainZ);
-            m_Calibration.G_gain[0] = gainX;
-            m_Calibration.G_gain[1] = gainY;
-            m_Calibration.G_gain[2] = gainZ;            
-        }
-    #else
-        m_Logger.trace("Skipping gyroscope gain calibration, CRT is disabled");
+    m_Logger.debug("Gyro offset calibration results: %f %f %f", UNPACK_VECTOR_ARRAY(m_Calibration.G_off));
     #endif
 }
 
