@@ -98,6 +98,19 @@ namespace SlimeVR
             case IMU_ICM20948:
                 sensor = new ICM20948Sensor(sensorID, address, rotation, sclPin, sdaPin);
                 break;
+            case IMU_BMI270:
+                // Extra param used as axis remap descriptor
+                {
+                int axisRemap = extraParam;
+                // Valid remap will use all axes, so there will be non-zero term in upper 9 mag bits
+                // Used to avoid default INT_PIN misinterpreted as axis mapping
+                if (axisRemap < 256) {
+                    sensor = new BMI270Sensor(sensorID, address, rotation, sclPin, sdaPin);
+                } else {
+                    sensor = new BMI270Sensor(sensorID, address, rotation, sclPin, sdaPin, axisRemap);
+                }
+                }
+                break;
             default:
                 sensor = new ErroneousSensor(sensorID, imuType);
                 break;

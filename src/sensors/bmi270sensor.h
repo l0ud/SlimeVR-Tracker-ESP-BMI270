@@ -25,6 +25,7 @@
 #define SENSORS_BMI270SENSOR_H
 
 #include "sensor.h"
+#include "sensors/axisremap.h"
 #include "mahony.h"
 #include "magneto1.4.h"
 
@@ -148,8 +149,9 @@ struct BMI270RestDetectionParams: RestDetectionParams {
 
 class BMI270Sensor : public Sensor {
     public:
-        BMI270Sensor(uint8_t id, uint8_t address, float rotation) :
-            Sensor("BMI270Sensor", IMU_BMI270, id, address, rotation)
+        BMI270Sensor(uint8_t id, uint8_t address, float rotation, uint8_t sclPin, uint8_t sdaPin, int axisRemap=AXIS_REMAP_DEFAULT) :
+            Sensor("BMI160Sensor", IMU_BMI160, id, address, rotation, sclPin, sdaPin)
+            , axisRemap(axisRemap)
 #if !BMI270_VQF_REST_DETECTION_AVAILABLE
             , restDetection(restDetectionParams, BMI270_ODR_GYR_MICROS / 1e6f, BMI270_ODR_ACC_MICROS / 1e6f)
 #endif
@@ -205,6 +207,7 @@ class BMI270Sensor : public Sensor {
         bool getTemperature(float* out);
     private:
         BMI270 imu {};
+        int axisRemap;
 
         Mahony<sensor_real_t> mahony;
 #if !BMI270_VQF_REST_DETECTION_AVAILABLE
