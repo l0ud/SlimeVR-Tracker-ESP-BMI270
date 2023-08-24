@@ -41,19 +41,20 @@ public:
     void startCalibration(int calibrationType) override final;
 
 private:
+	uint8_t rawData[127];
     uint8_t addr_mag = 0x30;
     bool magExists = false;
 
     // raw data and scaled as vector
     float q[4]{1.0f, 0.0f, 0.0f, 0.0f}; // for raw filter
-    float Axyz[3]{};
-    float Gxyz[3]{};
-    float Mxyz[3]{};
+    float Axyz[3]{0};
+    float Gxyz[3]{0};
+    float Mxyz[3]{0};
     Quat correction{0, 0, 0, 0};
     // Loop timing globals
     float deltat = 0;                // sample time in seconds
 
-    SlimeVR::Configuration::ICM42688CalibrationConfig m_Calibration;
+    SlimeVR::Configuration::ICM42688CalibrationConfig m_Calibration = {0};
 
     void accel_read();
     void gyro_read();

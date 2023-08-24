@@ -732,7 +732,7 @@ void BMI160Sensor::applyAccelCalibrationAndScale(sensor_real_t Axyz[3]) {
             Axyz[2] = m_Calibration.A_Ainv[2][0] * tmp[0] + m_Calibration.A_Ainv[2][1] * tmp[1] + m_Calibration.A_Ainv[2][2] * tmp[2];
         #else
             for (uint8_t i = 0; i < 3; i++)
-                Axyz[i] = (Axyz[i] - calibration->A_B[i]);
+                Axyz[i] = (Axyz[i] - m_Calibration.A_B[i]);
         #endif
     }
     Axyz[0] *= BMI160_ASCALE;

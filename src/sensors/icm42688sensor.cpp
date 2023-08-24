@@ -85,14 +85,14 @@ void ICM42688Sensor::motionSetup() {
     // turn on while flip back to calibrate. then, flip again after 5 seconds.
     // TODO: Move calibration invoke after calibrate button on slimeVR server available
     accel_read();
-    if(Gxyz[2] < -0.75f) {
+    if(Axyz[2] < -0.75f) {
         ledManager.on();
         m_Logger.info("Flip front to confirm start calibration");
         delay(5000);
         ledManager.off();
 
         accel_read();
-        if(Gxyz[2] > 0.75f) {
+        if(Axyz[2] > 0.75f) {
             m_Logger.debug("Starting calibration...");
             startCalibration(0);
         }
@@ -135,9 +135,12 @@ void ICM42688Sensor::motionLoop() {
 	uint16_t count = (uint16_t)(rawCount[0] << 8 | rawCount[1]); // Turn the 16 bits into a unsigned 16-bit value
 	count += 32; // Add a few read buffer packets (4 ms)
 	uint16_t packets = count / 8;								 // Packet size 8 bytes
-	uint8_t rawData[2080];
 	uint16_t stco = 0;
-    I2Cdev::readBytes(addr, ICM42688_FIFO_DATA, count, &rawData[0]); // Read buffer
+    count = std::min(count, (uint16_t)sizeof(rawData));
+    auto read = I2Cdev::readBytes(addr, ICM42688_FIFO_DATA, count, &rawData[0]);
+    if (read != count) {
+        m_Logger.warn("Read bytes %d instead of %d", read, count);
+    }
 
     accel_read();
     parseAccelData();
@@ -157,6 +160,7 @@ void ICM42688Sensor::motionLoop() {
 		float raw1 = (int16_t)((((int16_t)rawData[index + 3]) << 8) | rawData[index + 4]); // gy
 		float raw2 = (int16_t)((((int16_t)rawData[index + 5]) << 8) | rawData[index + 6]); // gz
 		if (raw0 < -32766 || raw1 < -32766 || raw2 < -32766) {
+            m_Logger.warn("Skip invalid!");
 			continue; // Skip invalid data
 		}
 		Gxyz[0] = raw0 * gscale; //gres
@@ -166,14 +170,13 @@ void ICM42688Sensor::motionLoop() {
 
         // TODO: mag axes will be different, make sure to change them here
         #if defined(_MAHONY_H_)
-        mahonyQuaternionUpdate(q, Axyz[0], Axyz[1], Axyz[2], Gxyz[0], Gxyz[1], Gxyz[2], Mxyz[0], Mxyz[1], Mxyz[2], deltat * 1.0e-6);
+        mahonyQuaternionUpdate(q, Axyz[0], Axyz[1], Axyz[2], Gxyz[0], Gxyz[1], Gxyz[2], Mxyz[0], Mxyz[1], Mxyz[2], deltat);
         #elif defined(_MADGWICK_H_)
-        madgwickQuaternionUpdate(q, Axyz[0], Axyz[1], Axyz[2], Gxyz[0], Gxyz[1], Gxyz[2], Mxyz[0], Mxyz[1], Mxyz[2], deltat * 1.0e-6);
+        madgwickQuaternionUpdate(q, Axyz[0], Axyz[1], Axyz[2], Gxyz[0], Gxyz[1], Gxyz[2], Mxyz[0], Mxyz[1], Mxyz[2], deltat);
         #endif
     }
-    
-    quaternion.set(-q[2], q[1], q[3], q[0]);
 
+    quaternion.set(-q[2], q[1], q[3], q[0]);
     quaternion *= sensorOffset;
 
     if(!lastQuatSent.equalsWithEpsilon(quaternion)) {
@@ -185,12 +188,12 @@ void ICM42688Sensor::motionLoop() {
 void ICM42688Sensor::accel_read() {
     uint8_t rawAccel[6];
     I2Cdev::readBytes(addr, ICM42688_ACCEL_DATA_X1, 6, &rawAccel[0]);
-	float raw0 = (int16_t)((((int16_t)rawAccel[0]) << 8) | rawAccel[1]);
-	float raw1 = (int16_t)((((int16_t)rawAccel[2]) << 8) | rawAccel[3]);
-	float raw2 = (int16_t)((((int16_t)rawAccel[4]) << 8) | rawAccel[5]);
-	Axyz[0] = raw0 * ascale;
-	Axyz[1] = raw1 * ascale;
-	Axyz[2] = raw2 * ascale;
+    float raw0 = (int16_t)((((int16_t)rawAccel[0]) << 8) | rawAccel[1]);
+    float raw1 = (int16_t)((((int16_t)rawAccel[2]) << 8) | rawAccel[3]);
+    float raw2 = (int16_t)((((int16_t)rawAccel[4]) << 8) | rawAccel[5]);
+    Axyz[0] = raw0 * ascale;
+    Axyz[1] = raw1 * ascale;
+    Axyz[2] = raw2 * ascale;
 }
 
 void ICM42688Sensor::gyro_read() {

@@ -60,7 +60,7 @@
 #endif
 
 // Setup for the Magnetometer
-#define useFullCalibrationMatrix true
+#define useFullCalibrationMatrix false
 
 // Battery configuration
 #define batterySampleRate 10000
