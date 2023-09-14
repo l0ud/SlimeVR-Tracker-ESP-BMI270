@@ -1,6 +1,6 @@
 /*
     SlimeVR Code is placed under the MIT license
-    Copyright (c) 2022 TheDevMinerTV
+    Copyright (c) 2023 S.J. Remington & SlimeVR contributors
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -21,27 +21,20 @@
     THE SOFTWARE.
 */
 
-#include "CalibrationConfig.h"
+#include "bmi323sensor.h"
 
-namespace SlimeVR {
-    namespace Configuration {
-        const char* calibrationConfigTypeToString(CalibrationConfigType type) {
-            switch (type) {
-            case NONE:
-                return "NONE";
-            case BMI160:
-                return "BMI160";
-            case BMI323:
-                return "BMI323";
-            case MPU6050:
-                return "MPU6050";
-            case MPU9250:
-                return "MPU9250";
-            case ICM20948:
-                return "ICM20948";
-            default:
-                return "UNKNOWN";
-            }
-        }
-    }
+void BMI323Sensor::motionSetup() {
+    
+}
+
+void BMI323Sensor::motionLoop() {
+
+}
+
+void BMI323Sensor::sendData() {
+
+}
+
+void BMI323Sensor::startCalibration(int calibrationType) {
+
 }

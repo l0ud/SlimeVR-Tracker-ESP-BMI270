@@ -21,27 +21,22 @@
     THE SOFTWARE.
 */
 
-#include "CalibrationConfig.h"
+#ifndef SENSORS_BMI323_H
+#define SENSORS_BMI323_H
 
-namespace SlimeVR {
-    namespace Configuration {
-        const char* calibrationConfigTypeToString(CalibrationConfigType type) {
-            switch (type) {
-            case NONE:
-                return "NONE";
-            case BMI160:
-                return "BMI160";
-            case BMI323:
-                return "BMI323";
-            case MPU6050:
-                return "MPU6050";
-            case MPU9250:
-                return "MPU9250";
-            case ICM20948:
-                return "ICM20948";
-            default:
-                return "UNKNOWN";
-            }
-        }
-    }
-}
+#include "sensor.h"
+
+class BMI323Sensor : public Sensor
+{
+public:
+    BMI323Sensor(uint8_t id, uint8_t address, float rotation, uint8_t sclPin, uint8_t sdaPin) :
+        Sensor("BMI323Sensor", IMU_BMI323, id, address, rotation, sclPin, sdaPin){};
+    ~BMI323Sensor();
+    
+    void motionSetup() override final;
+    void motionLoop() override final;
+    void sendData() override final;
+    void startCalibration(int calibrationType) override final;
+};
+
+#endif
