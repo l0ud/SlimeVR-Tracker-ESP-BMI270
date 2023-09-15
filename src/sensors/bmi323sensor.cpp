@@ -25,25 +25,39 @@
 #include "bmi323.h"
 #include "Wire.h"
 
-int bmi323_i2c_read(uint8_t dev_addr, uint8_t reg_addr, uint8_t *reg_data, uint16_t len) {
+BMI3_INTF_RET_TYPE bmi3_i2c_read(uint8_t reg_addr, uint8_t *reg_data, uint32_t len, void *intf_ptr) {
+    // Get sensor address from the interface pointer (intf_ptr)
+    BMI323Sensor* sensorInstance = static_cast<BMI323Sensor*>(intf_ptr);
+    uint8_t dev_addr = sensorInstance->address;
+
+    // Read data from the sensor
     Wire.beginTransmission(dev_addr);
     Wire.write(reg_addr);
     Wire.endTransmission();
     Wire.requestFrom(dev_addr, len);
-    for (int i = 0; i < len; i++) {
+    for (auto i = 0u; i < len; i++) {
         reg_data[i] = Wire.read();
     }
     return 0;
 }
 
-bmi3_write_fptr_t bmi323_i2c_write(uint8_t dev_addr, uint8_t reg_addr, uint8_t *reg_data, uint16_t len) {
+BMI3_INTF_RET_TYPE bmi3_i2c_write(uint8_t reg_addr, const uint8_t *reg_data, uint32_t len, void *intf_ptr) {
+    // Get sensor address from the interface pointer (intf_ptr)
+    BMI323Sensor* sensorInstance = static_cast<BMI323Sensor*>(intf_ptr);
+    uint8_t dev_addr = sensorInstance->address;
+
+    // Write data to the sensor
     Wire.beginTransmission(dev_addr);
     Wire.write(reg_addr);
-    for (int i = 0; i < len; i++) {
+    for (auto i = 0u; i < len; i++) {
         Wire.write(reg_data[i]);
     }
     Wire.endTransmission();
     return 0;
+}
+
+void bmi3_delay_us(uint32_t period, void *) {
+    delayMicroseconds(period);
 }
 
 void BMI323Sensor::motionSetup() {
@@ -53,16 +67,66 @@ void BMI323Sensor::motionSetup() {
     // Assign values to its members
     bmi323.chip_id = sensorId;
     bmi323.intf = BMI3_I2C_INTF;
-    bmi323.read = bmi323_i2c_read;
-    bmi323.write = bmi323_i2c_write;
-    
+    bmi323.read = bmi3_i2c_read;
+    bmi323.write = bmi3_i2c_write;
+    bmi323.delay_us = bmi3_delay_us;
+    bmi323.intf_ptr = this;
 
     // Initialize the sensor
-    int8_t result = bmi323_init(&bmi323);
-    if (result == BMI3_OK) {
-        Serial.println("BMI323 initialized");
+    int8_t initResult = bmi323_init(&bmi323);
+    if (initResult == BMI3_OK) {
+        Serial.println("BMI323 initialized on address 0x" + String(address, HEX));
     } else {
         Serial.println("BMI323 initialization failed");
+    }
+
+    // Get status
+    uint16_t status = 0;
+    int8_t statusResult = bmi323_get_int2_status(&status, &bmi323);
+    if (statusResult == BMI3_OK) {
+        Serial.println("BMI323 status: 0x" + String(status, HEX));
+    } else {
+        Serial.println("BMI323 status read failed");
+    }
+
+    // Configure sensors
+    bmi3_sens_config sensorsConfig[2];
+
+    // Configure accelerometer
+    sensorsConfig[0].type = BMI323_ACCEL;
+    bmi3_accel_config accelConfig;
+    accelConfig.odr = BMI3_ACC_ODR_100HZ; // Data rate
+    accelConfig.bwp = BMI3_ACC_AVG2; // Smoothing
+    accelConfig.acc_mode = BMI3_ACC_MODE_NORMAL; // Performance mode
+    accelConfig.range = BMI3_ACC_RANGE_8G; // Max G force
+    accelConfig.avg_num = 10; // Averaging
+    sensorsConfig[0].cfg.acc = accelConfig;
+
+    // Configure gyroscope
+    sensorsConfig[1].type = BMI323_GYRO;
+    bmi3_gyro_config gyroConfig;
+    gyroConfig.odr = BMI3_GYR_ODR_200HZ; // Data rate
+    gyroConfig.bwp = BMI3_GYR_AVG2; // Smoothing
+    gyroConfig.gyr_mode = BMI3_GYR_MODE_NORMAL; // Performance mode
+    gyroConfig.range = BMI3_GYR_RANGE_500DPS; // Sensitivity
+    gyroConfig.avg_num = 10; // Averaging
+    sensorsConfig[1].cfg.gyr = gyroConfig;
+
+    // Apply the configuration
+    bmi323_set_sensor_config(sensorsConfig, 2, &bmi323);
+
+    // Try to read temperature data
+    uint16_t rawTemp = 0;
+    int8_t tempResult = bmi323_get_temperature_data(&rawTemp, &bmi323);
+    if (tempResult == BMI3_OK) {
+        float temp = (float)(((float)((int16_t)rawTemp)) / 512.0) + 23.0;
+        Serial.print("Temperature: ");
+        Serial.println(temp);
+
+        Serial.print("Raw temperature: ");
+        Serial.println(rawTemp);
+    } else {
+        Serial.println("Temperature read failed");
     }
 }
 

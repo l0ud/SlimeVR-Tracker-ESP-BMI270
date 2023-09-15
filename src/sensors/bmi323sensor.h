@@ -30,13 +30,15 @@ class BMI323Sensor : public Sensor
 {
 public:
     BMI323Sensor(uint8_t id, uint8_t address, float rotation, uint8_t sclPin, uint8_t sdaPin) :
-        Sensor("BMI323Sensor", IMU_BMI323, id, address, rotation, sclPin, sdaPin){};
+        Sensor("BMI323Sensor", IMU_BMI323, id, address, rotation, sclPin, sdaPin), address(address) {};
     ~BMI323Sensor(){};
     
     void motionSetup() override final;
     void motionLoop() override final;
     void sendData() override final;
     void startCalibration(int calibrationType) override final;
+
+    uint8_t address;
 };
 
 #endif
