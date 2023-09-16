@@ -777,7 +777,7 @@ int8_t bmi323_get_temperature_data(uint16_t *temp_data, struct bmi3_dev *dev);
  * @param[in, out] fifo     : Structure instance of bmi3_fifo_frame.
  * @param[in]      dev      : Structure instance of bmi3_dev.
  *
- * @note APS has to be disabled before calling this function.
+ * @note APSf has to be disabled before calling this function.
  *
  * @return Result of API execution status
  *

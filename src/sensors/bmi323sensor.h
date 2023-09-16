@@ -33,12 +33,16 @@ public:
         Sensor("BMI323Sensor", IMU_BMI323, id, address, rotation, sclPin, sdaPin), address(address) {};
     ~BMI323Sensor(){};
     
+    SensorStatus getSensorState() override final {
+        return m_status;
+    }
     void motionSetup() override final;
     void motionLoop() override final;
     void sendData() override final;
     void startCalibration(int calibrationType) override final;
 
     uint8_t address;
+    SensorStatus m_status = SensorStatus::SENSOR_OFFLINE;
 };
 
 #endif

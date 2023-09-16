@@ -60,6 +60,20 @@ void bmi3_delay_us(uint32_t period, void *) {
     delayMicroseconds(period);
 }
 
+float getTemperature(struct bmi3_dev bmi323) {
+    float temp = 0;
+    uint16_t rawTemp = 0;
+    uint16_t result = bmi323_get_temperature_data(&rawTemp, &bmi323);
+    if (result == BMI3_OK) {
+        float temp = (float)(((float)((int16_t)rawTemp)) / 512.0) + 23.0;
+        Serial.print("Temperature: " + String(temp) + "°C");
+    } else {
+        Serial.println("Temperature read failed");
+    }
+
+    return temp;
+}
+
 void BMI323Sensor::motionSetup() {
     // Create an instance of the struct
     struct bmi3_dev bmi323;
@@ -72,9 +86,11 @@ void BMI323Sensor::motionSetup() {
     bmi323.delay_us = bmi3_delay_us;
     bmi323.intf_ptr = this;
 
+    int8_t result;
+
     // Initialize the sensor
-    int8_t initResult = bmi323_init(&bmi323);
-    if (initResult == BMI3_OK) {
+    result = bmi323_init(&bmi323);
+    if (result == BMI3_OK) {
         Serial.println("BMI323 initialized on address 0x" + String(address, HEX));
     } else {
         Serial.println("BMI323 initialization failed");
@@ -82,19 +98,19 @@ void BMI323Sensor::motionSetup() {
 
     // Get status
     uint16_t status = 0;
-    int8_t statusResult = bmi323_get_int2_status(&status, &bmi323);
-    if (statusResult == BMI3_OK) {
+    result = bmi323_get_int2_status(&status, &bmi323);
+    if (result == BMI3_OK) {
         Serial.println("BMI323 status: 0x" + String(status, HEX));
     } else {
         Serial.println("BMI323 status read failed");
     }
 
     // Configure sensors
-    bmi3_sens_config sensorsConfig[2];
+    struct bmi3_sens_config sensorsConfig[2];
 
     // Configure accelerometer
     sensorsConfig[0].type = BMI323_ACCEL;
-    bmi3_accel_config accelConfig;
+    struct bmi3_accel_config accelConfig;
     accelConfig.odr = BMI3_ACC_ODR_100HZ; // Data rate
     accelConfig.bwp = BMI3_ACC_AVG2; // Smoothing
     accelConfig.acc_mode = BMI3_ACC_MODE_NORMAL; // Performance mode
@@ -104,7 +120,7 @@ void BMI323Sensor::motionSetup() {
 
     // Configure gyroscope
     sensorsConfig[1].type = BMI323_GYRO;
-    bmi3_gyro_config gyroConfig;
+    struct bmi3_gyro_config gyroConfig;
     gyroConfig.odr = BMI3_GYR_ODR_200HZ; // Data rate
     gyroConfig.bwp = BMI3_GYR_AVG2; // Smoothing
     gyroConfig.gyr_mode = BMI3_GYR_MODE_NORMAL; // Performance mode
@@ -113,25 +129,72 @@ void BMI323Sensor::motionSetup() {
     sensorsConfig[1].cfg.gyr = gyroConfig;
 
     // Apply the configuration
-    bmi323_set_sensor_config(sensorsConfig, 2, &bmi323);
-
-    // Try to read temperature data
-    uint16_t rawTemp = 0;
-    int8_t tempResult = bmi323_get_temperature_data(&rawTemp, &bmi323);
-    if (tempResult == BMI3_OK) {
-        float temp = (float)(((float)((int16_t)rawTemp)) / 512.0) + 23.0;
-        Serial.print("Temperature: ");
-        Serial.println(temp);
-
-        Serial.print("Raw temperature: ");
-        Serial.println(rawTemp);
+    result = bmi323_set_sensor_config(sensorsConfig, 2, &bmi323);
+    if (result == BMI3_OK) {
+        Serial.println("BMI323 sensors configured");
     } else {
-        Serial.println("Temperature read failed");
+        Serial.println("BMI323 sensor configuration failed");
     }
+
+    // Enable FIFO
+    result = bmi323_set_fifo_config(BMI3_FIFO_ACC_EN | BMI3_FIFO_GYR_EN | BMI3_FIFO_TEMP_EN | BMI3_FIFO_TIME_EN, 1, &bmi323);
+    if (result == BMI3_OK) {
+        Serial.println("BMI323 FIFO enabled");
+    } else {
+        Serial.println("BMI323 FIFO enable failed");
+    }
+
+    uint8_t fifoFrameLength = (BMI3_LENGTH_FIFO_ACC + BMI3_LENGTH_FIFO_GYR + BMI3_LENGTH_TEMPERATURE + BMI3_LENGTH_FIFO_DATA + BMI3_LENGTH_FIFO_MSB_BYTE + 2) * 2;
+    uint16_t fifoLength = 0;
+    uint8_t fifoBuffer[33];
+    
+    struct bmi3_fifo_frame fifo;
+    fifo.data = fifoBuffer;
+    fifo.available_fifo_sens = BMI3_FIFO_GYR_EN | BMI3_FIFO_ACC_EN | BMI3_FIFO_TEMP_EN;
+    struct bmi3_fifo_sens_axes_data sensorData;
+    struct bmi3_fifo_temperature_data tempData;
+    for(int i = 0; i < 1000; i++) {
+
+        // Get FIFO length
+        bmi323_get_fifo_length(&fifoLength, &bmi323);
+        fifo.length = 33;
+        // Serial.println("BMI323 FIFO length: " + String(fifoLength));
+
+        if (fifoLength > 33) {
+            Serial.println("BMI323 reading FIFO data");
+            result = bmi323_read_fifo_data(&fifo, &bmi323);
+
+            result = bmi323_extract_gyro(&sensorData, &fifo, &bmi323);
+            if (result == BMI3_OK) {
+                Serial.println("BMI323 gyro data: " + String(sensorData.x) + ", " + String(sensorData.y) + ", " + String(sensorData.z));
+            } else {
+                Serial.println("BMI323 gyro data read failed");
+            }
+
+            result = bmi323_extract_accel(&sensorData, &fifo, &bmi323);
+            if (result == BMI3_OK) {
+                Serial.println("BMI323 accel data: " + String(sensorData.x) + ", " + String(sensorData.y) + ", " + String(sensorData.z));
+            } else {
+                Serial.println("BMI323 accel data read failed");
+            }
+
+            result = bmi323_extract_temperature(&tempData, &fifo, &bmi323);
+            if (result == BMI3_OK) {
+                float temp = (float)(((float)((int16_t)tempData.temp_data)) / 512.0) + 23.0;
+                Serial.println("BMI323 temperature data: " + String(temp) + "°C");
+            } else {
+                Serial.println("BMI323 temperature data read failed");
+            }
+        }
+        delay(100);
+    }
+
+    // Tell SlimeVR that the sensor is working and ready
+    m_status = SensorStatus::SENSOR_OK;
+    working = true;
 }
 
 void BMI323Sensor::motionLoop() {
-
 }
 
 void BMI323Sensor::sendData() {
@@ -139,5 +202,5 @@ void BMI323Sensor::sendData() {
 }
 
 void BMI323Sensor::startCalibration(int calibrationType) {
-
+    // bmi323_perform_gyro_sc
 }
