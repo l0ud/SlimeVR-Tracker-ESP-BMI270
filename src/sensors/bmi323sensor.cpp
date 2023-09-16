@@ -75,9 +75,6 @@ float getTemperature(struct bmi3_dev bmi323) {
 }
 
 void BMI323Sensor::motionSetup() {
-    // Create an instance of the struct
-    struct bmi3_dev bmi323;
-
     // Assign values to its members
     bmi323.chip_id = sensorId;
     bmi323.intf = BMI3_I2C_INTF;
@@ -144,57 +141,57 @@ void BMI323Sensor::motionSetup() {
         Serial.println("BMI323 FIFO enable failed");
     }
 
-    uint8_t fifoFrameLength = (BMI3_LENGTH_FIFO_ACC + BMI3_LENGTH_FIFO_GYR + BMI3_LENGTH_TEMPERATURE + BMI3_LENGTH_FIFO_DATA + BMI3_LENGTH_FIFO_MSB_BYTE + 2) * 2;
-    uint16_t fifoLength = 0;
-    uint8_t fifoBuffer[33];
-    
-    struct bmi3_fifo_frame fifo;
-    fifo.data = fifoBuffer;
-    fifo.available_fifo_sens = BMI3_FIFO_GYR_EN | BMI3_FIFO_ACC_EN | BMI3_FIFO_TEMP_EN;
-    struct bmi3_fifo_sens_axes_data sensorData;
-    struct bmi3_fifo_temperature_data tempData;
-    for(int i = 0; i < 1000; i++) {
-
-        // Get FIFO length
-        bmi323_get_fifo_length(&fifoLength, &bmi323);
-        fifo.length = 33;
-        // Serial.println("BMI323 FIFO length: " + String(fifoLength));
-
-        if (fifoLength > 33) {
-            Serial.println("BMI323 reading FIFO data");
-            result = bmi323_read_fifo_data(&fifo, &bmi323);
-
-            result = bmi323_extract_gyro(&sensorData, &fifo, &bmi323);
-            if (result == BMI3_OK) {
-                Serial.println("BMI323 gyro data: " + String(sensorData.x) + ", " + String(sensorData.y) + ", " + String(sensorData.z));
-            } else {
-                Serial.println("BMI323 gyro data read failed");
-            }
-
-            result = bmi323_extract_accel(&sensorData, &fifo, &bmi323);
-            if (result == BMI3_OK) {
-                Serial.println("BMI323 accel data: " + String(sensorData.x) + ", " + String(sensorData.y) + ", " + String(sensorData.z));
-            } else {
-                Serial.println("BMI323 accel data read failed");
-            }
-
-            result = bmi323_extract_temperature(&tempData, &fifo, &bmi323);
-            if (result == BMI3_OK) {
-                float temp = (float)(((float)((int16_t)tempData.temp_data)) / 512.0) + 23.0;
-                Serial.println("BMI323 temperature data: " + String(temp) + "°C");
-            } else {
-                Serial.println("BMI323 temperature data read failed");
-            }
-        }
-        delay(100);
-    }
-
     // Tell SlimeVR that the sensor is working and ready
     m_status = SensorStatus::SENSOR_OK;
     working = true;
 }
 
 void BMI323Sensor::motionLoop() {
+    // Measure how much time it takes to read the data
+    uint32_t startTime = millis();
+
+    // Fifo frame properties
+    struct bmi3_fifo_frame fifoFrame = { 0 };
+
+    // First we get the length of the data available in the fifo pile
+    bmi323_get_fifo_length(&fifoFrame.available_fifo_len, &bmi323);
+
+    // We set the length of the frame to the length of the data available times 2 (because each data point is 2 bytes)
+    fifoFrame.length = (uint16_t)(fifoFrame.available_fifo_len * 2) + bmi323.dummy_byte;
+    Serial.println("BMI323 FIFO length: " + String(fifoFrame.available_fifo_len));
+
+
+    uint8_t fifoData[fifoFrame.available_fifo_len] = { 0 };
+    fifoFrame.data = fifoData;
+    fifoFrame.length = fifoFrame.available_fifo_len;
+
+    uint8_t dataLength = fifoFrame.available_fifo_len > 512 ? 512 / 6 : fifoFrame.available_fifo_len / 6;
+    struct bmi3_fifo_sens_axes_data accelData[dataLength]; // 2048 / BMI3_LENGTH_FIFO_ACC
+    struct bmi3_fifo_sens_axes_data gyroData[dataLength]; // 2048 / BMI3_LENGTH_FIFO_GYR
+    struct bmi3_fifo_temperature_data tempData[dataLength]; // 2048 / BMI3_LENGTH_FIFO_ACC -> Temperature runs based on Accel
+
+    // Then we read the data from the fifo pile
+    uint16_t result = bmi323_read_fifo_data(&fifoFrame, &bmi323);
+    if (result == BMI3_OK) {
+        Serial.println("BMI323 fifo data read");
+        
+        bmi323_extract_accel(accelData, &fifoFrame, &bmi323);
+        // Serial.println("BMI323 accel data: " + String(accelData[0].x) + ", " + String(accelData[0].y) + ", " + String(accelData[0].z));
+
+        bmi323_extract_gyro(gyroData, &fifoFrame, &bmi323);
+        // Serial.println("BMI323 gyro data: " + String(gyroData[0].x) + ", " + String(gyroData[0].y) + ", " + String(gyroData[0].z));
+    
+        bmi323_extract_temperature(tempData, &fifoFrame, &bmi323);
+        float temp = (float)(((float)((int16_t)tempData[0].temp_data)) / 512.0) + 23.0;
+        // Serial.println("BMI323 temperature data: " + String(temp) + "°C");      
+    } else {
+        // Serial.println("BMI323 fifo data read failed");
+    }
+    
+    // Calculate how much time it took to read the data
+    uint32_t endTime = millis();
+    uint32_t deltaTime = endTime - startTime;
+    Serial.println("BMI323 data read took " + String(deltaTime) + "ms");
 }
 
 void BMI323Sensor::sendData() {

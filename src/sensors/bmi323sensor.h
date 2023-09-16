@@ -25,6 +25,7 @@
 #define SENSORS_BMI323_H
 
 #include "sensor.h"
+#include "bmi323.h"
 
 class BMI323Sensor : public Sensor
 {
@@ -43,6 +44,9 @@ public:
 
     uint8_t address;
     SensorStatus m_status = SensorStatus::SENSOR_OFFLINE;
+
+private:
+    bmi3_dev bmi323;
 };
 
 #endif
