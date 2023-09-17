@@ -46,8 +46,9 @@ public:
     SensorStatus m_status = SensorStatus::SENSOR_OFFLINE;
 
 private:
-    bmi3_dev bmi323;
+    void extractFrame(uint8_t *data, bmi3_fifo_sens_axes_data &accelData, bmi3_fifo_sens_axes_data &gyroData, bmi3_fifo_temperature_data &tempData);
 
+    bmi3_dev bmi323;
     uint16_t fifoByteIndex = 0;
     struct bmi3_fifo_frame fifoFrame = { 0 };
     uint8_t fifoData[1024] = { 0 };
