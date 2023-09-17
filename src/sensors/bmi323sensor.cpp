@@ -23,7 +23,6 @@
 
 #include "bmi323sensor.h"
 #include "bmi323.h"
-#include "Wire.h"
 #include "GlobalVars.h"
 
 BMI3_INTF_RET_TYPE bmiI2CRead(uint8_t reg_addr, uint8_t *reg_data, uint32_t len, void *intf_ptr) {
@@ -74,8 +73,15 @@ void BMI323Sensor::extractFrame(uint8_t *data, bmi3_fifo_sens_axes_data &accelDa
      * The most significant byte is last
     */
 
-    // Unpack accelerometer 
-    Serial.print(fifoByteIndex);
+   /*
+    printf("\nframe ");
+    for (int i=0; i<6+6+2+2; i++) {
+        printf("%02x", data[i]);
+    }
+    printf("\n");
+    */
+    // Unpack accelerometer
+    uint16_t fifoByteIndex = 0;
     accelData.x = (int16_t)((data[fifoByteIndex + 1] << 8) | data[fifoByteIndex]);
     accelData.y = (int16_t)((data[fifoByteIndex + 3] << 8) | data[fifoByteIndex + 2]);
     accelData.z = (int16_t)((data[fifoByteIndex + 5] << 8) | data[fifoByteIndex + 4]);
@@ -98,9 +104,8 @@ void BMI323Sensor::extractFrame(uint8_t *data, bmi3_fifo_sens_axes_data &accelDa
     if (tempData.temp_data == BMI3_FIFO_TEMP_DUMMY_FRAME) {
         Serial.println("BMI323 TEMP dummy frame");
     }
-    fifoByteIndex += 6;
-
-    // Note: The time data and the last word (empty) are not being extracted in this example.
+    // Note: The time data (2 bytes) is not being extracted in this example.
+    //fifoByteIndex += 2;
 }
 
 /*!
@@ -218,61 +223,70 @@ void BMI323Sensor::motionLoop() {
     bmi323_get_fifo_length(&fifoFrame.available_fifo_len, &bmi323);
 
     // We set the length of the frame to the length of the data available times 2 (because each data point is 2 bytes)
-    fifoFrame.length = (uint16_t)(fifoFrame.available_fifo_len * 2) + bmi323.dummy_byte;
+    fifoFrame.length = (uint16_t)(fifoFrame.available_fifo_len * 2);
+    constexpr auto frame_length_bytes = 6+6+2+2;
+    constexpr auto dummy_bytes = 2;
 
-    if (fifoFrame.available_fifo_len >= 144) { // 144 = 6 * 8 * 2 (6 values per sensor, 8 bytes per value, 2 sensors)
+
+    if (fifoFrame.length >= frame_length_bytes) {
         // Serial.print("\x1B[2J"); // Clear the screen
         // Serial.print("\x1B[H");
-        Serial.println("BMI323 FIFO length: " + String(fifoFrame.available_fifo_len) + "        ");
-        
+        m_Logger.info("BMI323 FIFO length bytes: %d", fifoFrame.length);
+        // calculate our read
+        fifoFrame.length = std::min(fifoFrame.length, static_cast<uint16_t>(I2C_BUFFER_LENGTH - dummy_bytes)) / frame_length_bytes * frame_length_bytes + dummy_bytes;
+        m_Logger.info("BMI323 FIFO read bytes: %d", fifoFrame.length);
+
         // Then we read the data from the fifo pile
         uint16_t result = bmi323_read_fifo_data(&fifoFrame, &bmi323);
-        fifoByteIndex = 18;
+
         if (result == BMI3_OK) {
+            const auto fifo_layload_len = fifoFrame.length - dummy_bytes;
+            uint8_t *fifo_payload = fifoFrame.data + dummy_bytes;
 
-            // Extract the data from the frame
-            struct bmi3_fifo_sens_axes_data testAccel;
-            struct bmi3_fifo_sens_axes_data testGyro;
-            struct bmi3_fifo_temperature_data testTemp;
+            const auto frame_count = fifo_layload_len / frame_length_bytes;
 
-            // uint16_t frameCount = fifoFrame.available_fifo_len / 144;
-            // for (uint16_t i = 0; i < frameCount; i++) {
-                // Serial.println("Frame " + String(i) + ":");
-            extractFrame(fifoFrame.data, testAccel, testGyro, testTemp);
-            float x = lsbToMps2(testAccel.x, 8, bmi323.resolution);
-            float y = lsbToMps2(testAccel.y, 8, bmi323.resolution);
-            float z = lsbToMps2(testAccel.z, 8, bmi323.resolution);
-            Serial.println("Acceleration: " + String(x) + ", " + String(y) + ", " + String(z) + "            ");
+            for (auto i=0; i<frame_count; i++) {
+                // Extract the data from the frame
+                struct bmi3_fifo_sens_axes_data testAccel;
+                struct bmi3_fifo_sens_axes_data testGyro;
+                struct bmi3_fifo_temperature_data testTemp;
 
-            x = lsbToDps(testGyro.x, (float)500, bmi323.resolution);
-            y = lsbToDps(testGyro.y, (float)500, bmi323.resolution);
-            z = lsbToDps(testGyro.z, (float)500, bmi323.resolution);
-            Serial.println("Gyroscope: " + String(x) + ", " + String(y) + ", " + String(z) + "           ");
+                extractFrame(&fifo_payload[i*frame_length_bytes], testAccel, testGyro, testTemp);
+                float x = lsbToMps2(testAccel.x, 8, bmi323.resolution);
+                float y = lsbToMps2(testAccel.y, 8, bmi323.resolution);
+                float z = lsbToMps2(testAccel.z, 8, bmi323.resolution);
+                Serial.println("["+ String(i) +"] Acceleration: " + String(x) + ", " + String(y) + ", " + String(z) + "            ");
 
-            float temp = (float)(((float)((int16_t)testTemp.temp_data)) / 512.0) + 23.0;
-            Serial.println("Temperature: " + String(temp) + "°C" + "           ");
-            // }
+                x = lsbToDps(testGyro.x, (float)500, bmi323.resolution);
+                y = lsbToDps(testGyro.y, (float)500, bmi323.resolution);
+                z = lsbToDps(testGyro.z, (float)500, bmi323.resolution);
+                Serial.println("Gyroscope: " + String(x) + ", " + String(y) + ", " + String(z) + "           ");
+
+                float temp = (float)(((float)((int16_t)testTemp.temp_data)) / 512.0) + 23.0;
+                Serial.println("Temperature: " + String(temp) + "°C" + "           ");
+            }
 
             Serial.print("\r");
-            Serial.println("------------------------- fifo data read -------------------------");
-            
-            uint8_t i = 0;
+            Serial.println("------------------------- Bosch way -------------------------");
             bmi323_extract_accel(accelData, &fifoFrame, &bmi323);
-            x = lsbToMps2(accelData[i].x, 8, bmi323.resolution);
-            y = lsbToMps2(accelData[i].y, 8, bmi323.resolution);
-            z = lsbToMps2(accelData[i].z, 8, bmi323.resolution);
-            Serial.println("BMI323 accel data: " + String(x) + ", " + String(y) + ", " + String(z));
-
             bmi323_extract_gyro(gyroData, &fifoFrame, &bmi323);
-            x = lsbToDps(gyroData[i].x, (float)500, bmi323.resolution);
-            y = lsbToDps(gyroData[i].y, (float)500, bmi323.resolution);
-            z = lsbToDps(gyroData[i].z, (float)500, bmi323.resolution);
-            Serial.println("BMI323 gyro data: " + String(x) + ", " + String(y) + ", " + String(z));
+            bmi323_extract_temperature(tempData, &fifoFrame, &bmi323);            
+            for (auto i=0; i<frame_count; i++) {
+                float x = lsbToMps2(accelData[i].x, 8, bmi323.resolution);
+                float y = lsbToMps2(accelData[i].y, 8, bmi323.resolution);
+                float z = lsbToMps2(accelData[i].z, 8, bmi323.resolution);
+                Serial.println("["+ String(i) +"] BMI323 accel data: " + String(x) + ", " + String(y) + ", " + String(z));
 
-            bmi323_extract_temperature(tempData, &fifoFrame, &bmi323);
-            temp = (float)(((float)((int16_t)tempData[i].temp_data)) / 512.0) + 23.0;
-            Serial.println("BMI323 temperature data: " + String(temp) + "°C");
-        } else {
+                x = lsbToDps(gyroData[i].x, (float)500, bmi323.resolution);
+                y = lsbToDps(gyroData[i].y, (float)500, bmi323.resolution);
+                z = lsbToDps(gyroData[i].z, (float)500, bmi323.resolution);
+                Serial.println("BMI323 gyro data: " + String(x) + ", " + String(y) + ", " + String(z));
+
+                float temp = (float)(((float)((int16_t)tempData[i].temp_data)) / 512.0) + 23.0;
+                Serial.println("BMI323 temperature data: " + String(temp) + "°C");
+            }
+        }
+        else {
             Serial.println("BMI323 fifo data read failed");
         }
     }

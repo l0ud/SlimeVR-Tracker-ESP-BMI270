@@ -26,6 +26,7 @@
 
 #include "sensor.h"
 #include "bmi323.h"
+#include "Wire.h"
 
 class BMI323Sensor : public Sensor
 {
@@ -49,12 +50,11 @@ private:
     void extractFrame(uint8_t *data, bmi3_fifo_sens_axes_data &accelData, bmi3_fifo_sens_axes_data &gyroData, bmi3_fifo_temperature_data &tempData);
 
     bmi3_dev bmi323;
-    uint16_t fifoByteIndex = 0;
     struct bmi3_fifo_frame fifoFrame = { 0 };
-    uint8_t fifoData[1024] = { 0 };
-    struct bmi3_fifo_sens_axes_data accelData[170]; // 2048 / BMI3_LENGTH_FIFO_ACC
-    struct bmi3_fifo_sens_axes_data gyroData[170]; // 2048 / BMI3_LENGTH_FIFO_GYR
-    struct bmi3_fifo_temperature_data tempData[170]; // 2048 / BMI3_LENGTH_FIFO_ACC -> Temperature runs based on Accel
+    uint8_t fifoData[I2C_BUFFER_LENGTH] = { 0 };
+    struct bmi3_fifo_sens_axes_data accelData[10];
+    struct bmi3_fifo_sens_axes_data gyroData[10];
+    struct bmi3_fifo_temperature_data tempData[10];
 };
 
 #endif
