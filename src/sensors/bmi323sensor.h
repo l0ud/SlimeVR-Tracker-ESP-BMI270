@@ -47,6 +47,13 @@ public:
 
 private:
     bmi3_dev bmi323;
+
+    uint16_t fifoByteIndex = 0;
+    struct bmi3_fifo_frame fifoFrame = { 0 };
+    uint8_t fifoData[1024] = { 0 };
+    struct bmi3_fifo_sens_axes_data accelData[170]; // 2048 / BMI3_LENGTH_FIFO_ACC
+    struct bmi3_fifo_sens_axes_data gyroData[170]; // 2048 / BMI3_LENGTH_FIFO_GYR
+    struct bmi3_fifo_temperature_data tempData[170]; // 2048 / BMI3_LENGTH_FIFO_ACC -> Temperature runs based on Accel
 };
 
 #endif
