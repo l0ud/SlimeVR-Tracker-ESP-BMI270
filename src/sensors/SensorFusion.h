@@ -44,12 +44,12 @@ namespace SlimeVR
         struct SensorVQFParams: VQFParams {
             SensorVQFParams() : VQFParams() {
                 #ifndef VQF_NO_MOTION_BIAS_ESTIMATION
-                motionBiasEstEnabled = false;
+                motionBiasEstEnabled = true;
                 #endif
                 tauAcc = 2.0f;
                 restMinT = 2.0f;
                 restThGyr = 0.6f; // 400 norm
-                restThAcc = 0.06f; // 100 norm
+                //restThAcc = 0.06f; // 100 norm
             }
         };
         #endif
@@ -82,6 +82,7 @@ namespace SlimeVR
             void clearUpdated();
             sensor_real_t const * getQuaternion();
             Quat getQuaternionQuat();
+            Quat getQuaternionOnlyGyroQuat();
             sensor_real_t const * getGravityVec();
             sensor_real_t const * getLinearAcc();
             void getLinearAcc(sensor_real_t outLinAccel[3]);

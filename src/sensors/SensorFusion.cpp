@@ -133,6 +133,18 @@ namespace SlimeVR
             return Quat(qwxyz[1], qwxyz[2], qwxyz[3], qwxyz[0]);
         }
 
+        Quat SensorFusion::getQuaternionOnlyGyroQuat()
+        {
+            sensor_real_t result[4];
+            #if SENSOR_USE_BASICVQF
+                basicvqf.getQuat3D(result);
+            #elif SENSOR_USE_VQF
+                vqf.getQuat3D(result);
+            #endif
+            
+            return Quat(result[1], result[2], result[3], result[0]);
+        }
+
         sensor_real_t const * SensorFusion::getGravityVec()
         {
             if (!gravityReady) {

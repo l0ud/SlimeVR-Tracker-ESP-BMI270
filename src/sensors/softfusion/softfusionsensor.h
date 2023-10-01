@@ -3,6 +3,7 @@
 #include "../sensor.h"
 #include "drivers/lsm6ds3trc.h"
 #include "drivers/icm42688p.h"
+#include "drivers/mpu6050.h"
 #include "../SensorFusionRestDetect.h"
 
 namespace SlimeVR::Sensors
@@ -16,11 +17,13 @@ class SoftFusionSensor : public Sensor
 
     static constexpr auto GyroCalibDelaySeconds = 5;
     static constexpr auto GyroCalibSeconds = 5;
-    static constexpr auto SampleRateCalibDelaySeconds = 1;
+    static constexpr auto SampleRateCalibDelaySeconds = 5;
     static constexpr auto SampleRateCalibSeconds = 5;
 
     static constexpr auto AccelCalibDelaySeconds = 3;
     static constexpr auto AccelCalibRestSeconds = 3;
+
+    static constexpr auto GyroCalibSensitivityDelaySeconds = 3;
 
     static constexpr double GScale = ((32768. / imu::GyroSensitivity) / 32768.) * (PI / 180.0);
     static constexpr double AScale = CONST_EARTH_GRAVITY / imu::AccelSensitivity;
@@ -50,6 +53,7 @@ class SoftFusionSensor : public Sensor
             const float temperature = m_sensor.getDirectTemp();
             m_lastTemperaturePacketSent = now - (elapsed - sendInterval);
             networkConnection.sendTemperature(sensorId, temperature);
+            //m_Logger.warn("Rest %d", m_fusion.getRestDetected());
         }
     }
 
@@ -90,6 +94,9 @@ class SoftFusionSensor : public Sensor
         auto lastSecondsRemaining = seconds;
         while (millis() < calibTargetDelay)
         {
+            #ifdef ESP8266
+                ESP.wdtFeed();
+            #endif
             auto currentSecondsRemaining = (calibTargetDelay - millis()) / 1000;
             if (currentSecondsRemaining != lastSecondsRemaining) {
                 m_Logger.info("%d...", currentSecondsRemaining + 1);
@@ -161,7 +168,7 @@ public:
         }
 
         SlimeVR::Configuration::CalibrationConfig sensorCalibration = configuration.getCalibration(sensorId);
-        // If no compatible calibration data is found, the calibration data will just be zero-ed out
+        // If no compatible calibration data is found, the calibration data will just be zeroed out
         switch (sensorCalibration.type) {
             case SlimeVR::Configuration::CalibrationConfigType::SFUSION:
                 m_calibration = sensorCalibration.data.sfusion;
@@ -180,6 +187,8 @@ public:
 
         m_status = SensorStatus::SENSOR_OK;
         working = true;
+
+        calibrateGyroSensitivity();
     }
 
 
@@ -190,6 +199,7 @@ public:
             calibrateSampleRate();
             calibrateGyroOffset();
             calibrateAccel();
+            calibrateGyroSensitivity();
         }
         else if (calibrationType == 1)
         {
@@ -202,6 +212,9 @@ public:
         else if (calibrationType == 3)
         {
             calibrateAccel();
+        }
+        else if (calibrationType == 4) {
+            calibrateGyroSensitivity();
         }
 
         saveCalibration();
@@ -267,7 +280,7 @@ public:
 
         RestDetectionParams calibrationRestDetectionParams;
         calibrationRestDetectionParams.restMinTimeMicros = AccelCalibRestSeconds * 1e6;
-        calibrationRestDetectionParams.restThAcc = 0.25f;
+        calibrationRestDetectionParams.restThAcc = 1.0f;
 
         RestDetection calibrationRestDetection(
             calibrationRestDetectionParams,
@@ -353,7 +366,7 @@ public:
         float A_BAinv[4][3];
         magneto->current_calibration(A_BAinv);
 
-        m_Logger.debug("Finished calculating accelerometer calibration");
+        m_Logger.info("Finished calculating accelerometer calibration");
         m_Logger.debug("Accelerometer calibration matrix:");
         m_Logger.debug("{");
         for (int i = 0; i < 3; i++) {
@@ -368,7 +381,7 @@ public:
 
     void calibrateSampleRate()
     {
-        m_Logger.debug("Calibrating IMU sample rate in %d second(s)...", SampleRateCalibDelaySeconds);
+        m_Logger.info("Calibrating IMU sample rate in %d second(s)...", SampleRateCalibDelaySeconds);
         ledManager.on();
         eatSamplesForSeconds(SampleRateCalibDelaySeconds);
 
@@ -396,6 +409,102 @@ public:
 
         //fusion needs to be recalculated
         recalcFusion();
+    }
+
+    void calibrateGyroSensitivity()
+    {
+        m_Logger.info("Calibrating IMU sample rate in %d second(s)...", SampleRateCalibDelaySeconds);
+        m_Logger.info("Lay your tracker FLAT on flat surface (your desk), WITHOUT strap");
+        eatSamplesForSeconds(GyroCalibSensitivityDelaySeconds);
+        m_Logger.info("Lean FLAT side of your tracker's case against FLAT object that will NOT move during the calibration");
+        m_Logger.info("For example: keyboard, book on your desk, the wall at your desk");
+        m_Logger.info("Calibration will start when tracker is put at rest at the correct position");
+        uint8_t axisToCalib = 0x7;
+
+        const auto calibTarget = millis() + 1000 * 30;
+        uint32_t currentTime;
+        bool lastSensorRested = false;
+        bool alreadyStarted = false;
+        Quat startQuat = {};
+        int rotationCount[3] = {0};
+        Vector3 previousRotation(0, 0, 0);
+
+        auto handleRotation = [](const float &previous,const float &current, int &count)
+        {
+            auto absDiff = abs(current-previous);
+
+            if (absDiff > 100) {
+                if (current >= 0.0)
+                {
+                    count += 1;
+                }
+                else
+                {
+                    count -= 1;
+                }
+            }
+        };
+
+        while ((currentTime = millis()) < calibTarget)
+        {
+            // feed the fusion
+            m_sensor.bulkRead(
+                [&](const int16_t xyz[3], const sensor_real_t timeDelta) { processAccelSample(xyz, timeDelta); },
+                [&](const int16_t xyz[3], const sensor_real_t timeDelta) { processGyroSample(xyz, timeDelta); }
+            );
+
+            if (m_fusion.getRestDetected()) {
+                startQuat = m_fusion.getQuaternionOnlyGyroQuat();
+            }
+            else {
+                Quat endQuat = m_fusion.getQuaternionOnlyGyroQuat();
+                constexpr float dpsPerRad = 57.295779578552f;
+                auto currentRotation = (endQuat * startQuat.inverse()).get_euler() * dpsPerRad;
+                handleRotation(previousRotation.x, currentRotation.x, rotationCount[0]);
+                handleRotation(previousRotation.y, currentRotation.y, rotationCount[1]);
+                handleRotation(previousRotation.z, currentRotation.z, rotationCount[2]);
+                previousRotation = currentRotation;
+                m_Logger.info("%f %f %f %d %d %d",
+                    currentRotation.x-(360.0*rotationCount[0]),
+                    currentRotation.y-(360.0*rotationCount[1]),
+                    currentRotation.z-(360.0*rotationCount[2]),
+                    rotationCount[0],
+                    rotationCount[1],
+                    rotationCount[2]);
+            }
+
+/*
+            if (m_fusion.getRestDetected() && lastSensorRested == false)
+            {
+                if (alreadyStarted)
+                {
+                    Quat endQuat = m_fusion.getQuaternionOnlyGyroQuat();
+                    constexpr float dpsPerRad = 57.295779578552f;
+                    auto rawRotationFinal = (endQuat * startQuat.inverse()).get_euler() * dpsPerRad;
+                    m_Logger.info("Initial quat %f %f %f %f", startQuat.x, startQuat.y, startQuat.z, startQuat.w);
+                    m_Logger.info("Ending quat %f %f %f %f", endQuat.x, endQuat.y, endQuat.z, endQuat.w);
+                    m_Logger.info("Rotation final %f %f %f", rawRotationFinal.x, rawRotationFinal.y, rawRotationFinal.z);
+                }
+
+                m_Logger.info("Sensor at rest. Axis remaining to calibrate: %c %c %c",
+                    axisToCalib & 0x1 ? 'X' : ' ',
+                    axisToCalib & 0x2 ? 'Y' : ' ',
+                    axisToCalib & 0x4 ? 'Z' : ' '
+                );
+                m_Logger.info("Rotate your tracker slowly in ONE of the axis, making full 360 degree rotation.");
+                m_Logger.info("You can rotate it multiple times, it's recommeded to do around 3 full rotations.");
+                lastSensorRested = true;
+                alreadyStarted = true;
+                startQuat = m_fusion.getQuaternionOnlyGyroQuat();
+            }
+
+
+            if (!m_fusion.getRestDetected() && lastSensorRested == true)
+            {
+                lastSensorRested = false;
+            }            */
+        }
+
     }
 
     SensorStatus getSensorState() override final

@@ -130,6 +130,9 @@ namespace SlimeVR
             case IMU_ICM42688P:
                 sensor = new SoftFusionSensor<SoftFusion::Drivers::ICM42688P<SoftFusion::I2CImpl>>(sensorID, sclPin, sdaPin, rotation);
                 break;
+            case IMU_SFMPU6050:
+                sensor = new SoftFusionSensor<SoftFusion::Drivers::MPU6050<SoftFusion::I2CImpl>>(sensorID, sclPin, sdaPin, rotation);
+                break;
             default:
                 sensor = new ErroneousSensor(sensorID, imuType);
                 break;

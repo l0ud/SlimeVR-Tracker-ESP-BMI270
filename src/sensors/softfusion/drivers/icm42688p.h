@@ -95,7 +95,7 @@ struct ICM42688P
         // perform initialization step
         i2c::writeReg(Regs::DeviceConfig::reg, Regs::DeviceConfig::valueSwReset);
         delay(20);
-
+        i2c::writeReg(0x52, 0xee);
         i2c::writeReg(Regs::IntfConfig0::reg, Regs::IntfConfig0::value);
         i2c::writeReg(Regs::GyroConfig::reg, Regs::GyroConfig::value);
         i2c::writeReg(Regs::AccelConfig::reg, Regs::AccelConfig::value);
