@@ -35,6 +35,10 @@
 #define IMU_ERROR_LENGTH DEFAULT_LENGTH
 #define IMU_ERROR_INTERVAL 1000
 #define IMU_ERROR_COUNT 5
+#define IMU_CALIBRATING_LENGTH 100
+#define IMU_CALIBRATING_MOTIONLESS_INTERVAL 100
+#define IMU_CALIBRATING_INTERVAL 1000
+#define IMU_CALIBRATING_GAP 200
 #define LOW_BATTERY_LENGTH DEFAULT_LENGTH
 #define LOW_BATTERY_INTERVAL 300
 #define LOW_BATTERY_COUNT 1
@@ -88,7 +92,14 @@ namespace SlimeVR
 
         void update();
 
+        /*!
+         *  @brief Set current calibration stage, if calibration is in progress
+         *  @param calibrationStage Current calibration stage (0 - motionless, > 0 - number of blinks)
+         */
+        void setCalibrationStage(uint8_t calibrationStage);
+
     private:
+        uint8_t m_calibrationStage = 0; // 0 - do not move, 1....6 - move to side
         uint8_t m_CurrentCount = 0;
         unsigned long m_Timer = 0;
         LEDStage m_CurrentStage = OFF;

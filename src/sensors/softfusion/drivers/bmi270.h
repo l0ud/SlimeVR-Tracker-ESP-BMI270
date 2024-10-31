@@ -305,6 +305,14 @@ struct BMI270
         return true;
     }
 
+    void _delayWithLeds(unsigned long ms) {
+        const auto targetDelay = millis() + ms;
+        while (millis() < targetDelay)
+        {
+            ledManager.update();
+        }
+    }
+
     void motionlessCalibration(MotionlessCalibrationData &gyroSensitivity)
     {
         // perfrom gyroscope motionless sensitivity calibration (CRT)
@@ -312,16 +320,16 @@ struct BMI270
         restartAndInit();
         // only Accel ON
         i2c.writeReg(Regs::PwrCtrl::reg, Regs::PwrCtrl::valueAccOn);
-        delay(100);
+        _delayWithLeds(100);
         i2c.writeReg(Regs::GyrCrtConf::reg, Regs::GyrCrtConf::valueRunning);
         i2c.writeReg(Regs::FeatPage, 1);
         i2c.writeReg16(Regs::GTrig1::reg, Regs::GTrig1::valueTriggerCRT);
         i2c.writeReg(Regs::Cmd::reg, Regs::Cmd::valueGTrigger);
-        delay(200);
+        _delayWithLeds(200);
 
         while(i2c.readReg(Regs::GyrCrtConf::reg) == Regs::GyrCrtConf::valueRunning) {
             logger.info("CRT running. Do not move tracker!");
-            delay(200);
+            _delayWithLeds(200);
         }
 
         i2c.writeReg(Regs::FeatPage, 0);
@@ -329,7 +337,7 @@ struct BMI270
         uint8_t status = i2c.readReg(Regs::GyrGainStatus::reg) >> Regs::GyrGainStatus::statusOffset;
         // turn gyroscope back on
         i2c.writeReg(Regs::PwrCtrl::reg, Regs::PwrCtrl::valueGyrAccTempOn);
-        delay(100);
+        _delayWithLeds(100);
 
         if (status != 0) {
             logger.error("CRT failed with status 0x%x. Recalibrate again to enable CRT.", status);
@@ -396,6 +404,7 @@ struct BMI270
                     gyro[0] = getFromFifo<uint16_t>(i, read_buffer);
                     gyro[1] = getFromFifo<uint16_t>(i, read_buffer);
                     gyro[2] = getFromFifo<uint16_t>(i, read_buffer);
+
                     using ShortLimit = std::numeric_limits<int16_t>;
                     // apply zx factor, todo: this awful line should be simplified and validated
                     gyro[0] = std::clamp(static_cast<int32_t>(gyro[0]) - static_cast<int16_t>((static_cast<int32_t>(zxFactor) * gyro[2]) / 512),
@@ -408,6 +417,7 @@ struct BMI270
                     accel[0] = getFromFifo<uint16_t>(i, read_buffer);
                     accel[1] = getFromFifo<uint16_t>(i, read_buffer);
                     accel[2] = getFromFifo<uint16_t>(i, read_buffer);
+
                     processAccelSample(accel, AccTs);
                 }
             }

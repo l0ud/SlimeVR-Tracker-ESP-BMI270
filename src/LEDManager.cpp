@@ -82,8 +82,24 @@ namespace SlimeVR
 
         unsigned int length = 0;
         unsigned int count = 0;
-
-        if (statusManager.hasStatus(Status::LOW_BATTERY))
+        if (statusManager.hasStatus(Status::IMU_CALIBRATING))
+        {
+            count = m_calibrationStage;
+            switch (m_CurrentStage)
+            {
+            case ON:
+            case OFF:
+                length = IMU_CALIBRATING_LENGTH;
+                break;
+            case GAP:
+                length = IMU_CALIBRATING_GAP;
+                break;
+            case INTERVAL:
+                length = (m_calibrationStage == 0 ? IMU_CALIBRATING_MOTIONLESS_INTERVAL : IMU_CALIBRATING_INTERVAL);
+                break;
+            }
+        }
+        else if (statusManager.hasStatus(Status::LOW_BATTERY))
         {
             count = LOW_BATTERY_COUNT;
             switch (m_CurrentStage)
@@ -209,4 +225,7 @@ namespace SlimeVR
             m_Timer += diff;
         }
     }
-}
+	void LEDManager::setCalibrationStage(uint8_t calibrationStage) {
+        m_calibrationStage = calibrationStage;
+    }
+	}  // namespace SlimeVR

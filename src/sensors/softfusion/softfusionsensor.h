@@ -37,7 +37,7 @@ class SoftFusionSensor : public Sensor
     using imu = T<I2CImpl>;
     using RawVectorT = std::array<int16_t, 3>;
     static constexpr auto UpsideDownCalibrationInit = true;
-    static constexpr auto GyroCalibDelaySeconds = 5;
+    static constexpr auto GyroCalibDelaySeconds = 3;
     static constexpr auto GyroCalibSeconds = 5;
     static constexpr auto SampleRateCalibDelaySeconds = 1;
     static constexpr auto SampleRateCalibSeconds = 5;
@@ -121,6 +121,7 @@ class SoftFusionSensor : public Sensor
         auto lastSecondsRemaining = seconds;
         while (millis() < targetDelay)
         {
+            ledManager.update();
             #ifdef ESP8266
 			    ESP.wdtFeed();
 		    #endif
@@ -272,6 +273,8 @@ public:
 
     void startCalibration(int calibrationType) override final
     {
+        statusManager.setStatus(SlimeVR::Status::IMU_CALIBRATING, true);
+        ledManager.setCalibrationStage(0); // motionless
         if (calibrationType == 0) {
             // ALL
             calibrateSampleRate();
@@ -305,6 +308,7 @@ public:
             }
         }
 
+        statusManager.setStatus(SlimeVR::Status::IMU_CALIBRATING, false);
         saveCalibration();
     }
 
@@ -322,15 +326,11 @@ public:
     {
         // Wait for sensor to calm down before calibration
         m_Logger.info("Put down the device and wait for baseline gyro reading calibration (%d seconds)", GyroCalibDelaySeconds);
-        ledManager.on();
         eatSamplesForSeconds(GyroCalibDelaySeconds);
-        ledManager.off();
 
         m_calibration.temperature = m_sensor.getDirectTemp();
         m_Logger.trace("Calibration temperature: %f", m_calibration.temperature);
 
-        ledManager.pattern(100, 100, 3);
-        ledManager.on();
         m_Logger.info("Gyro calibration started...");
 
         int32_t sumXYZ[3] = {0};
@@ -339,12 +339,13 @@ public:
 
         while (millis() < targetCalib)
         {
+            ledManager.update();
             #ifdef ESP8266
 			    ESP.wdtFeed();
 		    #endif
             m_sensor.bulkRead(
                 [](const int16_t xyz[3], const sensor_real_t timeDelta) { },
-                [&sumXYZ, &sampleCount](const int16_t xyz[3], const sensor_real_t timeDelta) {
+                [&](const int16_t xyz[3], const sensor_real_t timeDelta) {
                     sumXYZ[0] += xyz[0];
                     sumXYZ[1] += xyz[1];
                     sumXYZ[2] += xyz[2];
@@ -353,7 +354,6 @@ public:
             );
         }
 
-        ledManager.off();
         m_calibration.G_off[0] = ((double)sumXYZ[0]) / sampleCount;
         m_calibration.G_off[1] = ((double)sumXYZ[1]) / sampleCount;
         m_calibration.G_off[2] = ((double)sumXYZ[2]) / sampleCount;
@@ -365,9 +365,7 @@ public:
     {
         auto magneto = std::make_unique<MagnetoCalibration>();
         m_Logger.info("Put the device into 6 unique orientations (all sides), leave it still and do not hold/touch for %d seconds each", AccelCalibRestSeconds);
-        ledManager.on();
         eatSamplesForSeconds(AccelCalibDelaySeconds);
-        ledManager.off();
 
         RestDetectionParams calibrationRestDetectionParams;
         calibrationRestDetectionParams.restMinTime = AccelCalibRestSeconds;
@@ -387,12 +385,12 @@ public:
         bool waitForMotion = true;
 
         auto accelCalibrationChunk = std::make_unique<float[]>(numSamplesPerPosition * 3);
-        ledManager.pattern(100, 100, 6);
-        ledManager.on();
         m_Logger.info("Gathering accelerometer data...");
         m_Logger.info("Waiting for position %i, you can leave the device as is...", numPositionsRecorded + 1);
         bool samplesGathered = false;
         while (!samplesGathered) {
+            ledManager.setCalibrationStage(numPositionsRecorded + 1); // side X
+            ledManager.update();
             #ifdef ESP8266
 			    ESP.wdtFeed();
 		    #endif
@@ -429,8 +427,6 @@ public:
                             numPositionsRecorded++;
                             numCurrentPositionSamples = 0;
                             if (numPositionsRecorded < expectedPositions) {
-                                ledManager.pattern(50, 50, 2);
-                                ledManager.on();
                                 m_Logger.info("Recorded, waiting for position %i...", numPositionsRecorded + 1);
                                 waitForMotion = true;
                             }
@@ -447,7 +443,6 @@ public:
                 [](const int16_t xyz[3], const sensor_real_t timeDelta) { }
             );
         }
-        ledManager.off();
         m_Logger.debug("Calculating accelerometer calibration data...");
         accelCalibrationChunk.reset();
 
@@ -470,7 +465,6 @@ public:
     void calibrateSampleRate()
     {
         m_Logger.debug("Calibrating IMU sample rate in %d second(s)...", SampleRateCalibDelaySeconds);
-        ledManager.on();
         eatSamplesForSeconds(SampleRateCalibDelaySeconds);
 
         uint32_t accelSamples = 0;
@@ -481,6 +475,7 @@ public:
         uint32_t currentTime;
         while ((currentTime = millis()) < calibTarget)
         {
+            ledManager.update();
             m_sensor.bulkRead(
                 [&accelSamples](const int16_t xyz[3], const sensor_real_t timeDelta) { accelSamples++; },
                 [&gyroSamples](const int16_t xyz[3], const sensor_real_t timeDelta) { gyroSamples++; }
@@ -494,7 +489,6 @@ public:
         m_calibration.G_Ts = millisFromStart / (gyroSamples * 1000.0) ;
 
         m_Logger.debug("Gyro frequency %fHz, accel frequency: %fHz", 1.0/m_calibration.G_Ts, 1.0/m_calibration.A_Ts);
-        ledManager.off();
 
         //fusion needs to be recalculated
         recalcFusion();
