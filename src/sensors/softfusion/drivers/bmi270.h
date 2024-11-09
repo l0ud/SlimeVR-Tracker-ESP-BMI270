@@ -75,7 +75,8 @@ struct BMI270
             static constexpr uint8_t reg = 0x7e;
             static constexpr uint8_t valueSwReset = 0xb6;
             static constexpr uint8_t valueFifoFlush = 0xb0;
-            static constexpr uint8_t valueGTrigger = 0x02;            
+            static constexpr uint8_t valueGTrigger = 0x02;
+            static constexpr uint8_t valueNvmProg = 0xa0;    
         };
 
         struct PwrConf {
@@ -355,6 +356,8 @@ struct BMI270
             gyroSensitivity.z = crt_values[2];
         }
 
+        // reboot imu to clear weird gyro offset after CRT
+        restartAndInit();
         setNormalConfig(gyroSensitivity);
     }
 
